@@ -204,7 +204,7 @@ export class DemoApp extends LitElement {
 
   async print() {
     const encoder = new MVTEncoder();
-    const viewResolution = this.map?.getView().getResolution();
+    const viewResolution = this.map?.getView().getResolution()!;
     const size = this.map!.getSize()!;
 
     const pp = computePrintPosition(this.getPrintDimensions(viewResolution), size[0], size[1]);
@@ -216,7 +216,7 @@ export class DemoApp extends LitElement {
     this.printExtentLayer?.getSource().addFeature(new Feature({
       geometry: polygonFromExtent(printExtent)
     }))
-    const result = await encoder.encodeMVTLayer(this.mvtLayer, viewResolution, printExtent, this.printScale);
+    const result = await encoder.encodeMVTLayer(this.mvtLayer!, viewResolution, printExtent);
     console.log(result);
     this.result0 = result[0];
   }
@@ -229,7 +229,7 @@ export class DemoApp extends LitElement {
       const c0 = [e[0], e[1]];
       const c1 = [e[2], e[3]];
       img = html`<img id="side" src="${this.result0.baseURL}" />`
-      extent = html`<div>${toLonLat(c0, 'EPSG:3857')} ${toLonLat(c1, 'EPSG:3857')}</div>`;
+      extent = html`<div>${JSON.stringify(toLonLat(c0, 'EPSG:3857'))} ${JSON.stringify(toLonLat(c1, 'EPSG:3857'))}</div>`;
     }
     return html`
       ${extent}
