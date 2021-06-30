@@ -29,9 +29,9 @@ test('encodeMVTLayer', async () => {
     "extent": [731501.5247058513, 5862982.857784151, 731716.3713230825, 5863099.32407374],
   }]);
 
-  const results2 = await encoder.encodeMVTLayer(mvtLayer, 100, printExtent);
+  const results2 = await encoder.encodeMVTLayer(mvtLayer, 20, printExtent);
   expect(results2).toStrictEqual([{
-    "baseURL": "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAUAAAADCAYAAABbNsX4AAAABmJLR0QA/wD/AP+gvaeTAAAAPklEQVQImWNggAKTmac3mcw8vZiBgYGBRW/6RTFWpt9C/xkYPjMwMAQw/P/PyMLK9PslVPGD/4yMIQyMjP8B9GwQsPo+aOwAAAAASUVORK5CYII=",
+    "baseURL": "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABwAAAAPCAYAAAD3T6+hAAAABmJLR0QA/wD/AP+gvaeTAAABQklEQVQ4jc3UQSsEYRzH8e9/Zmrbjdok7lyUktZIeyDegNtuSk4Ok/AGnJSj4kBqd8hRjYu8ArXZC8OF23Lg4rC1iNYyM38n5bAHuzH5np/n9zk89QhtlvM887bWV1Fk58IZWf/pPaNd8DCfDxGKgi7mPM/8cxAAxQV6bh77p2MBfceuKnIgqsuxgABGFG0CkxnXH4oFPF8YvRK0JKEuxQICoGwhzGZ3y12xgB0PL0dAtREm5mMBT1anAmDNIEr/xl7TMq4/bhfOfvRu37NaOTy8f5k2G+EcgkOkAyriAdutbAhAdqOcrCeTvaYRmmpIWiK1DNHOSCUBpICUIhOCzgBPCHsoru/Yd61gAJIp+KeCjgHNvqdnIARqQEVEi6py7Dv2R6vQV5aIlgyiFQK5DxLmW9Cw6lG3+XqdH3xvd/Rf9QnF6WwWOrM0HwAAAABJRU5ErkJggg==",
     "extent": [731501.5247058513, 5862982.857784151, 731716.3713230825, 5863099.32407374],
   }]);
 });

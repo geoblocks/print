@@ -18,6 +18,9 @@ const mvtFormat = new MVT();
 
 interface PrintEncodeOptions {
   canvasResolution?: number
+  tileResolution?: number
+  styleResolution?: number
+  monitorResolution?: number
   monitorDPI?: number
   paperDPI?: number
 }
@@ -88,19 +91,34 @@ export default class MVTEncoder {
     return vectorContext;
   }
 
+  computeReasonableTileResolution(tileGrid, monitorResolution, tileResolution) {
+    const targetResolution = tileResolution || monitorResolution;
+    const resolutions = tileGrid.getResolutions();
+    let resolution = resolutions[resolutions.length - 2]; // the last one is exclusive?
+    for (let i = resolutions.length - 2; i >= 0; i--) {
+      const r = resolutions[i];
+      if (r <= targetResolution) {
+        resolution = r;
+      } else {
+        break;
+      }
+    }
+    return resolution;
+  }
+
   /**
    *
-   * @param {VectorTileLayer} layer
-   * @param {number} resolution
+   * @param layer
+   * @param defaultResolution
    * @param {import('ol/extent.js').Extent} printExtent
    */
-  async encodeMVTLayer(layer: VectorTileLayer, resolution: number, printExtent: Extent, options: PrintEncodeOptions = {}): Promise<PrintResult[]> {
+  async encodeMVTLayer(layer: VectorTileLayer, defaultResolution: number, printExtent: Extent, options: PrintEncodeOptions = {}): Promise<PrintResult[]> {
     const source = layer.getSource();
     const projection = source.getProjection();
     const tileGrid = source.getTileGrid();
-    // what resolution to use here? the best one? can't it be too much data?
-    const bestFeatureResolution = ((rr) => rr[rr.length - 2])(tileGrid.getResolutions());
-    const mvtTiles = listTilesCoveringExtentAtResolution(printExtent, bestFeatureResolution, tileGrid);
+    const monitorResolution = options.monitorResolution || defaultResolution;
+    const tileResolution = this.computeReasonableTileResolution(tileGrid, monitorResolution, options.tileResolution);
+    const mvtTiles = listTilesCoveringExtentAtResolution(printExtent, tileResolution, tileGrid);
 
     const urlFunction = source.getTileUrlFunction();
     const featuresPromises = mvtTiles.map(t => {
@@ -136,7 +154,8 @@ export default class MVTEncoder {
     // By default we want 254 DPI on paper VS 96 DPI on the display
     const paperDPI = options.paperDPI || 254;
     const monitorDPI = options.monitorDPI || 96;
-    const rtResolution = options.canvasResolution || monitorDPI / paperDPI * resolution;
+    const rtResolution = options.canvasResolution || monitorDPI / paperDPI * monitorResolution;
+    const styleResolution = options.styleResolution || tileResolution;
     const layerStyleFunction = layer.getStyleFunction()!; // there is always a default one
     const layerOpacity = layer.get('opacity');
     // render to these tiles;
@@ -147,7 +166,7 @@ export default class MVTEncoder {
       featuresAndExtents.forEach(ft => {
         if (ft.status === 'fulfilled') {
           const transform = createWorldToVectorContextTransform(rtExtent, canvas.width, canvas.height);
-          this.drawFeaturesToContext_(ft.value.features, layerStyleFunction, resolution, transform, vectorContext);
+          this.drawFeaturesToContext_(ft.value.features, layerStyleFunction, styleResolution, transform, vectorContext);
         }
       });
 
