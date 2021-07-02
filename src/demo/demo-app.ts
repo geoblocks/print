@@ -19,6 +19,10 @@ import VectorLayer from 'ol/layer/Vector';
 import VectorSource from 'ol/source/Vector';
 import Feature from 'ol/Feature';
 import {fromExtent as polygonFromExtent} from 'ol/geom/Polygon';
+import Style from 'ol/style/Style';
+import Icon from 'ol/style/Icon';
+import Stroke from 'ol/style/Stroke';
+import Text from 'ol/style/Text';
 
 
 /**
@@ -36,12 +40,12 @@ export class DemoApp extends LitElement {
       padding: 16px;
     }
     #side {
-      display: inline-block;
       background-color: lightgray;
+      display: inline-block;
     }
     #print {
       position: absolute;
-      top: 9em;
+      top: 10em;
       left: 2.5em;
       width: 30px;
       height: 30px;
@@ -49,7 +53,7 @@ export class DemoApp extends LitElement {
     #map {
       display: inline-block;
       width: 45%;
-      height: calc(100vh - 32px - 20px);
+      height: calc(100vh - 32px - 20px - 40px);
     }
     .ol-control {
       position: absolute;
@@ -152,6 +156,27 @@ export class DemoApp extends LitElement {
 
   createMap() {
     this.mvtLayer = new VectorTileLayer({
+      style(feature) {
+        if (feature.getGeometry()?.getType() === 'Point') {
+          return new Style({
+            text: new Text({
+              font: 'bold 28px beach',
+              text: 'beach',
+              offsetY: 40,
+            }),
+            image: new Icon({
+              src: `/beach.svg`,
+              opacity: 0.5,
+              scale: 0.05,
+            })
+          })
+        }
+        return new Style({
+          stroke: new Stroke({
+            color: 'red'
+          }),
+        })
+      },
       source: new VectorTileSource({
         format: new MVT(),
         url: '/tiles/{z}/{x}/{y}.pbf',
@@ -232,7 +257,7 @@ export class DemoApp extends LitElement {
       extent = html`<div>${JSON.stringify(toLonLat(c0, 'EPSG:3857'))} ${JSON.stringify(toLonLat(c1, 'EPSG:3857'))}</div>`;
     }
     return html`
-      ${extent}
+      <div>${extent || 'Move around and click the print button...'}</div>
       <div>
         <div id="map"></div>
         ${img}
