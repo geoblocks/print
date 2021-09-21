@@ -8,7 +8,7 @@
   private fetcher: typeof fetch;
 
   constructor() {
-    this.fetcher = fetch.bind(window);
+    this.fetcher = typeof global.fetch !== "undefined" ? fetch.bind(window) : null;
   }
 
   fetch(input: RequestInfo, init?: RequestInit): Promise<Response> {
