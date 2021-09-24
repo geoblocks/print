@@ -6,7 +6,7 @@ import {toContext} from 'ol/render';
 import {PoolDownloader} from './PoolDownloader';
 import {Size} from 'ol/size';
 import RenderFeature from 'ol/render/Feature';
-import {StyleFunction} from 'ol/style/Style';
+import Style, {StyleFunction} from 'ol/style/Style';
 import {Transform} from 'ol/transform';
 import CanvasImmediateRenderer from 'ol/render/canvas/Immediate';
 import VectorTileLayer from 'ol/layer/VectorTile';
@@ -45,6 +45,8 @@ export default class MVTEncoder {
    */
   private drawFeaturesToContext_(features: RenderFeature[], styleFunction: StyleFunction, styleResolution: number,
     coordinateToPixelTransform: Transform, vectorContext: CanvasImmediateRenderer) {
+    const toDraw: [Style, RenderFeature, number][] = [];
+    let i = 0;
     features.forEach((f) => {
       let geometry = f.getGeometry();
       // poor man copy
@@ -57,16 +59,26 @@ export default class MVTEncoder {
       const styles = styleFunction(f, styleResolution);
       if (styles) {
         if (!Array.isArray(styles)) {
-          vectorContext.setStyle(styles);
-          vectorContext.drawGeometry(geometry);
+          toDraw.push([styles, geometry, ++i]);
         } else {
           styles.forEach((style) => {
-            vectorContext.setStyle(style);
-            vectorContext.drawGeometry(geometry);
+            toDraw.push([style, geometry, ++i]);
           });
         }
       }
     });
+
+    // sort is stable for newer browsers
+    // see https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Array/sort#description
+    // for security we handle the stability ourself
+    toDraw.sort((a, b) => {
+      const r = (a[0].getZIndex() || 0) - (b[0].getZIndex() || 0);
+      return r || a[2] - b[2];
+    });
+    for (const item of toDraw) {
+      vectorContext.setStyle(item[0]);
+      vectorContext.drawGeometry(item[1]);
+    }
   }
 
   /**
@@ -110,7 +122,7 @@ export default class MVTEncoder {
    *
    * @param layer
    * @param defaultResolution
-   * @param {import('ol/extent.js').Extent} printExtent
+   * @param printExtent
    */
   async encodeMVTLayer(layer: VectorTileLayer, defaultResolution: number, printExtent: Extent, options: PrintEncodeOptions = {}): Promise<PrintResult[]> {
     const source = layer.getSource();

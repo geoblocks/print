@@ -23,7 +23,9 @@ import Style from 'ol/style/Style';
 import Icon from 'ol/style/Icon';
 import Stroke from 'ol/style/Stroke';
 import Text from 'ol/style/Text';
-
+import stylefunction from "ol-mapbox-style/dist/stylefunction";
+import TileGrid from 'ol/tilegrid/TileGrid';
+import {extentFromProjection} from "ol/tilegrid";
 
 /**
  * An example element.
@@ -153,37 +155,88 @@ export class DemoApp extends LitElement {
   @state()
   private result0;
 
+  @state()
+  private zoom: number = -1;
+
+  configureVTStyle(layer, url) {
+    fetch(url)
+    .then(r => r.json())
+    .then(style => {
+        let spriteUrl, spriteDataUrl, spriteImageUrl, addMpFonts;
+
+        if (style.sprite) {
+            spriteUrl = style.sprite;
+
+            // support relative spriteUrls
+            if (spriteUrl.includes("./")) {
+                spriteUrl = new URL(spriteUrl, url);
+            }
+
+            spriteDataUrl = spriteUrl.toString().concat(".json");
+            spriteImageUrl = spriteUrl.toString().concat(".png");
+
+            fetch(spriteDataUrl)
+                .then(r => r.json())
+                .then(r => r.data)
+                .then(spriteData => {
+                    stylefunction(layer, style, Object.keys(style.sources)[0], undefined, spriteData, spriteImageUrl, addMpFonts);
+                }
+                );
+        }
+        else {
+            stylefunction(layer, style, Object.keys(style.sources)[0], undefined, undefined, undefined, addMpFonts);
+        }
+    });
+
+  }
 
   createMap() {
+    const extent = extentFromProjection('EPSG:3857');
+    const origin = [extent[0], extent[3]];
     this.mvtLayer = new VectorTileLayer({
-      style(feature) {
-        if (feature.getGeometry()?.getType() === 'Point') {
-          return new Style({
-            text: new Text({
-              font: 'bold 28px beach',
-              text: 'beach',
-              offsetY: 40,
-            }),
-            image: new Icon({
-              src: `/beach.svg`,
-              opacity: 0.5,
-              scale: 0.05,
-            })
-          })
-        }
-        return new Style({
-          stroke: new Stroke({
-            color: 'red'
-          }),
-        })
-      },
+      // style(feature) {
+      //   if (feature.getGeometry()?.getType() === 'Point') {
+      //     return new Style({
+      //       text: new Text({
+      //         font: 'bold 28px beach',
+      //         text: 'beach',
+      //         offsetY: 40,
+      //       }),
+      //       image: new Icon({
+      //         src: `/beach.svg`,
+      //         opacity: 0.5,
+      //         scale: 0.05,
+      //       })
+      //     })
+      //   }
+      //   return new Style({
+      //     stroke: new Stroke({
+      //       color: 'red'
+      //     }),
+      //   })
+      // },
       source: new VectorTileSource({
         format: new MVT(),
-        url: '/tiles/{z}/{x}/{y}.pbf',
+        tileGrid: new TileGrid({
+          tileSize: 512,
+          resolutions: [78271.5169640117238, 39135.7584820058619,
+            19567.8792410029309, 9783.93962050146547, 4891.96981025073273,
+            2445.98490512536637, 1222.99245256268318, 611.496226281341592,
+            305.7481131406708, 152.8740565703354, 76.437028285167699,
+            38.2185141425838495, 19.1092570712919247, 9.55462853564596237,
+            4.77731426782298119, 2.38865713391149059, 1],
+            extent: extent,
+            origin: origin,
+        }),
+        url: 'https://adv-smart.de/tiles/smarttiles_de_public/{z}/{x}/{y}.pbf',
         maxZoom: 14,
         // extent: trackExtent,
       })
     });
+    this.configureVTStyle(this.mvtLayer,
+      //'https://dev.adv-smart.de/styles/public/v0/de_style_grey.json'
+      'https://adv-smart.de/styles/public/de_style_hillshade.json'
+    );
     this.printExtentLayer = new VectorLayer({
       // @ts-ignore we add custom property, which is fine with OL
       'name': 'printExtent',
@@ -194,19 +247,20 @@ export class DemoApp extends LitElement {
     this.map = new OLMap({
       target: this.mapEl,
       layers: [
+        // new TileLayer({
+        //   source: new OSM(),
+        // }),
+        this.printExtentLayer,
+        this.mvtLayer,
         new TileLayer({
-          source: new OSM(),
-        }),
-        new TileLayer({
+          //zIndex: 10000,
           source: new TileDebug({
             tileGrid: this.mvtLayer.getSource().getTileGrid()
           })
         }),
-        this.printExtentLayer,
-        this.mvtLayer
       ],
       view: new View({
-        center: fromLonLat([6.57253, 46.51336]),
+        center: fromLonLat([8.355,47.576]),
         zoom: 14
       })
     })
@@ -214,7 +268,11 @@ export class DemoApp extends LitElement {
       const res = evt.frameState.viewState.resolution;
       //const printResolution = 1 / PIXELS_PER_METER / this.printScale;
       drawPaperDimensions(evt, this.getPrintDimensions(res));
+    });
+    this.map.getView().on('change:resolution', () => {
+      this.zoom = this.map?.getView().getZoom() || -1;
     })
+    this.zoom = this.map?.getView().getZoom() || -1;
   }
 
   getPrintDimensions(resolution) {
@@ -258,6 +316,7 @@ export class DemoApp extends LitElement {
     }
     return html`
       <div>${extent || 'Move around and click the print button...'}</div>
+      <div>zoom: ${this.zoom.toFixed(1)}</div>
       <div>
         <div id="map"></div>
         ${img}
