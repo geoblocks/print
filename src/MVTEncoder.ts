@@ -30,6 +30,13 @@ interface PrintResult {
   baseURL: string,
 }
 
+interface ToDraw {
+  zIndex: number|undefined
+  feature: RenderFeature
+  naturalOrder: number
+  styleIdx: number
+}
+
 /**
  * Encode an OpenLayers MVT layer to a list of canvases.
  */
@@ -45,24 +52,26 @@ export default class MVTEncoder {
    */
   private drawFeaturesToContext_(features: RenderFeature[], styleFunction: StyleFunction, styleResolution: number,
     coordinateToPixelTransform: Transform, vectorContext: CanvasImmediateRenderer) {
-    const toDraw: [Style, RenderFeature, number][] = [];
+    const toDraw: ToDraw[] = [];
     let i = 0;
     features.forEach((f) => {
-      let geometry = f.getGeometry();
-      // poor man copy
-      geometry = Object.assign(Object.create(Object.getPrototypeOf(geometry)), geometry);
-      // FIXME: can we avoid accessing private properties?
-      const inCoos = geometry['flatCoordinates_'];
-      const outCoos = geometry['flatCoordinates_'] = new Array(inCoos.length);
-      const stride = geometry.getStride();
-      transform2D(inCoos, 0, inCoos.length, stride, coordinateToPixelTransform, outCoos);
       const styles = styleFunction(f, styleResolution);
       if (styles) {
         if (!Array.isArray(styles)) {
-          toDraw.push([styles, geometry, ++i]);
+          toDraw.push({
+            zIndex: styles.getZIndex(),
+            feature: f,
+            naturalOrder: ++i,
+            styleIdx: -1
+          });
         } else {
-          styles.forEach((style) => {
-            toDraw.push([style, geometry, ++i]);
+          styles.forEach((style, sIdx) => {
+            toDraw.push({
+              zIndex: style.getZIndex(),
+              feature: f,
+              naturalOrder: ++i,
+              styleIdx: sIdx
+            });
           });
         }
       }
@@ -72,12 +81,40 @@ export default class MVTEncoder {
     // see https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Array/sort#description
     // for security we handle the stability ourself
     toDraw.sort((a, b) => {
-      const r = (a[0].getZIndex() || 0) - (b[0].getZIndex() || 0);
-      return r || a[2] - b[2];
+      const r = (a.zIndex || 0) - (b.zIndex || 0);
+      return r || a.naturalOrder - b.naturalOrder;
     });
+
+    // In order to honour zIndex we do drawing in 2 steps:
+    // - first we create a list of geometries + style to render and order it by zIndex
+    // - then we re-apply the style and draw.
+    // We can not simply keep a reference to the style because they are mutable: some styles are reused
+    // for several features and the value would be overwritten otherwise.
     for (const item of toDraw) {
-      vectorContext.setStyle(item[0]);
-      vectorContext.drawGeometry(item[1]);
+      const styles = styleFunction(item.feature, styleResolution);
+      const style = item.styleIdx === -1 ? styles : styles[item.styleIdx];
+      vectorContext.setStyle(style);
+
+      // Keep it simple by systematically getting the geometry either from the style or from the feature
+      // Then the coordinates are transformed
+      let geometry = style.getGeometry();
+      if (typeof geometry === "function") {
+        geometry = geometry();
+      }
+      if (!geometry) {
+        geometry = item.feature.getGeometry();
+      }
+
+      // poor man copy
+      geometry = Object.assign(Object.create(Object.getPrototypeOf(geometry)), geometry);
+      // FIXME: can we avoid accessing private properties?
+      const inCoos = geometry['flatCoordinates_'];
+      const outCoos = geometry['flatCoordinates_'] = new Array(inCoos.length);
+      const stride = geometry.getStride();
+      transform2D(inCoos, 0, inCoos.length, stride, coordinateToPixelTransform, outCoos);
+
+      // Finally draw the feature with previously set style
+      vectorContext.drawGeometry(geometry);
     }
   }
 
