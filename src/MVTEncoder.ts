@@ -37,6 +37,16 @@ interface ToDraw {
   styleIdx: number
 }
 
+interface RenderTile {
+  printExtent: Extent
+}
+
+interface _FeatureExtent {
+  features: RenderFeature[],
+  extent: Extent,
+  url: string
+}
+
 /**
  * Encode an OpenLayers MVT layer to a list of canvases.
  */
@@ -191,12 +201,13 @@ export default class MVTEncoder {
         });
     });
 
-    let featuresAndExtents = await Promise.allSettled(featuresPromises);
-    featuresAndExtents = featuresAndExtents.filter(r => r.status === 'fulfilled')
+    const featuresAndExtents = (await Promise.allSettled(featuresPromises))
+      .filter(r => r.status === 'fulfilled')
+      .map(r => (r as PromiseFulfilledResult<_FeatureExtent>).value)
 
     // determinate a reasonable number of paving tiles for the rendering
     // this depend on the size of the tiles
-    const renderTiles = [{
+    const renderTiles: RenderTile[] = [{
       printExtent // print extent
     }];
 
@@ -207,16 +218,25 @@ export default class MVTEncoder {
     const styleResolution = options.styleResolution || tileResolution;
     const layerStyleFunction = layer.getStyleFunction()!; // there is always a default one
     const layerOpacity = layer.get('opacity');
+
     // render to these tiles;
-    const encodedLayers = renderTiles.map(rt => {
-      const canvas = document.createElement('canvas');
-      const rtExtent = rt.printExtent;
+    const encodedLayers = renderTiles.map(rt => this.renderTile(
+      featuresAndExtents, rt.printExtent,
+      rtResolution, styleResolution,
+      layerStyleFunction, layerOpacity
+    ));
+    return encodedLayers;
+  }
+
+
+  renderTile(featuresExtents: _FeatureExtent[], rtExtent: Extent,
+     rtResolution: number, styleResolution: number,
+     layerStyleFunction: StyleFunction, layerOpacity: number): PrintResult {
+    const canvas = document.createElement('canvas');
       const vectorContext = this.createRenderContext(canvas, rtExtent, rtResolution);
-      featuresAndExtents.forEach(ft => {
-        if (ft.status === 'fulfilled') {
-          const transform = createWorldToVectorContextTransform(rtExtent, canvas.width, canvas.height);
-          this.drawFeaturesToContext_(ft.value.features, layerStyleFunction, styleResolution, transform, vectorContext);
-        }
+      featuresExtents.forEach(ft => {
+        const transform = createWorldToVectorContextTransform(rtExtent, canvas.width, canvas.height);
+        this.drawFeaturesToContext_(ft.features, layerStyleFunction, styleResolution, transform, vectorContext);
       });
 
       const baseUrl = (layerOpacity === 1 ? canvas: asOpacity(canvas, layerOpacity)).toDataURL('PNG');
@@ -224,8 +244,5 @@ export default class MVTEncoder {
         extent: rtExtent,
         baseURL: baseUrl,
       };
-    });
-
-    return encodedLayers;
   }
 }
