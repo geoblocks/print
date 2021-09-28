@@ -9,6 +9,7 @@
     ],
     "./src/": "./src/"
   },
+  "type": "module",
   "types": "types/main.d.ts",
   "files": [
     "dist",
