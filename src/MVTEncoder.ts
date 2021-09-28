@@ -5,13 +5,17 @@ import {createWorldToVectorContextTransform, listTilesCoveringExtentAtResolution
 import {toContext} from 'ol/render';
 import {PoolDownloader} from './PoolDownloader';
 import {Size} from 'ol/size';
-import RenderFeature from 'ol/render/Feature';
+import RenderFeature from 'ol/render/Feature.js';
+import {renderFeature} from 'ol/renderer/vector.js';
 import Style, {StyleFunction} from 'ol/style/Style';
 import {Transform} from 'ol/transform';
 import CanvasImmediateRenderer from 'ol/render/canvas/Immediate';
 import VectorTileLayer from 'ol/layer/VectorTile';
 import {asOpacity} from './canvasUtils';
 
+import CanvasBuilderGroup from 'ol/render/canvas/BuilderGroup.js';
+import CanvasExecutorGroup from 'ol/render/canvas/ExecutorGroup.js';
+import RBush from 'rbush';
 
 const pool = new PoolDownloader();
 const mvtFormat = new MVT();
@@ -31,7 +35,7 @@ interface PrintResult {
 }
 
 interface ToDraw {
-  zIndex: number|undefined
+  zIndex: number | undefined
   feature: RenderFeature
   naturalOrder: number
   styleIdx: number
@@ -52,6 +56,8 @@ interface _FeatureExtent {
  */
 export default class MVTEncoder {
 
+  static useImmediateAPI = false;
+
   /**
    *
    * @param features A list of features to render (in world coordinates)
@@ -60,7 +66,119 @@ export default class MVTEncoder {
    * @param coordinateToPixelTransform World to CSS coordinates transform (top-left is 0)
    * @param vectorContext
    */
-  private drawFeaturesToContext_(features: RenderFeature[], styleFunction: StyleFunction, styleResolution: number,
+  private drawFeaturesToContextUsingRenderAPI_(
+    featuresExtent: _FeatureExtent, styleFunction: StyleFunction, styleResolution: number,
+    coordinateToPixelTransform: Transform, context: CanvasRenderingContext2D,
+    renderBuffer: number, declutterTree?: RBush<any>) {
+
+    const pixelRatio = 1;
+    const builderGroup = new CanvasBuilderGroup(
+      0,
+      featuresExtent.extent,
+      styleResolution,
+      pixelRatio
+    );
+
+    let declutterBuilderGroup: CanvasBuilderGroup | undefined;
+    if (declutterTree) {
+      declutterBuilderGroup = new CanvasBuilderGroup(
+        0,
+        featuresExtent.extent,
+        styleResolution,
+        pixelRatio
+      );
+    }
+
+    function listener() {
+      console.log('FIXME: something happened, we should regenerate the image');
+    }
+
+    /**
+     * @this {CanvasVectorTileLayerRenderer}
+     */
+    const localRenderFeature = function (feature: RenderFeature) {
+      let styles: Style[] | Style | undefined;
+      const sf = feature.getStyleFunction() || styleFunction;
+      if (sf) {
+        styles = sf(feature, styleResolution);
+      }
+      if (styles) {
+        let loading = false;
+        if (!Array.isArray(styles)) {
+          styles = [styles];
+        }
+        const tolerance = 0;
+        for (const style of styles) {
+          loading = renderFeature(
+            builderGroup,
+            feature,
+            style,
+            tolerance,
+            listener,
+            undefined,
+            declutterBuilderGroup
+          ) || loading;
+        }
+      }
+    };
+
+    featuresExtent.features.forEach((f) => {
+      localRenderFeature(f);
+    });
+
+    const sourceHasOverlaps = true; // we don't care about performance
+    const executorGroupInstructions = builderGroup.finish();
+    const renderingExecutorGroup = new CanvasExecutorGroup(
+      featuresExtent.extent,
+      styleResolution,
+      pixelRatio,
+      sourceHasOverlaps,
+      executorGroupInstructions,
+      renderBuffer,
+    );
+    const scale = 1;
+    const transform = coordinateToPixelTransform;
+    const viewRotation = 0;
+    const snapToPixel = true;
+    renderingExecutorGroup.execute(
+      context,
+      scale,
+      transform,
+      viewRotation,
+      snapToPixel,
+      undefined,
+      declutterTree
+    );
+    if (declutterBuilderGroup) {
+      const declutterExecutorGroup = new CanvasExecutorGroup(
+        featuresExtent.extent,
+        styleResolution,
+        pixelRatio,
+        sourceHasOverlaps,
+        declutterBuilderGroup.finish(),
+        renderBuffer
+      );
+      declutterExecutorGroup.execute(
+        context,
+        scale,
+        transform,
+        viewRotation,
+        snapToPixel, undefined,
+        declutterTree
+      );
+    }
+  }
+
+
+  /**
+   *
+   * @param features A list of features to render (in world coordinates)
+   * @param styleFunction The style function for the features
+   * @param styleResolution The resolution used in the style function
+   * @param coordinateToPixelTransform World to CSS coordinates transform (top-left is 0)
+   * @param vectorContext
+   */
+  private drawFeaturesToContextUsingImmediateAPI_(features: RenderFeature[], styleFunction: StyleFunction, styleResolution: number,
     coordinateToPixelTransform: Transform, vectorContext: CanvasImmediateRenderer) {
     const toDraw: ToDraw[] = [];
     let i = 0;
@@ -128,6 +246,8 @@ export default class MVTEncoder {
     }
   }
 
+
+
   /**
    * Adjust size of the canvas and wrap it into the OL immediate API.
    * @param canvas The canvas to render to
@@ -172,6 +292,7 @@ export default class MVTEncoder {
    * @param printExtent
    */
   async encodeMVTLayer(layer: VectorTileLayer, defaultResolution: number, printExtent: Extent, options: PrintEncodeOptions = {}): Promise<PrintResult[]> {
+    const renderBuffer = layer.getRenderBuffer() ?? 100;
     const source = layer.getSource();
     const projection = source.getProjection();
     const tileGrid = source.getTileGrid();
@@ -219,30 +340,40 @@ export default class MVTEncoder {
     const layerStyleFunction = layer.getStyleFunction()!; // there is always a default one
     const layerOpacity = layer.get('opacity');
 
+    const decluterTree = layer.getDeclutter() ? new RBush<any>(9) : undefined;
+
     // render to these tiles;
     const encodedLayers = renderTiles.map(rt => this.renderTile(
       featuresAndExtents, rt.printExtent,
       rtResolution, styleResolution,
-      layerStyleFunction, layerOpacity
+      layerStyleFunction, layerOpacity, renderBuffer,
+      decluterTree,
     ));
     return encodedLayers;
   }
 
 
   renderTile(featuresExtents: _FeatureExtent[], rtExtent: Extent,
-     rtResolution: number, styleResolution: number,
-     layerStyleFunction: StyleFunction, layerOpacity: number): PrintResult {
+    rtResolution: number, styleResolution: number,
+    layerStyleFunction: StyleFunction, layerOpacity: number,
+    renderBuffer: number, decluterTree?: RBush<any>): PrintResult {
     const canvas = document.createElement('canvas');
-      const vectorContext = this.createRenderContext(canvas, rtExtent, rtResolution);
-      featuresExtents.forEach(ft => {
-        const transform = createWorldToVectorContextTransform(rtExtent, canvas.width, canvas.height);
-        this.drawFeaturesToContext_(ft.features, layerStyleFunction, styleResolution, transform, vectorContext);
-      });
+    const vectorContext = this.createRenderContext(canvas, rtExtent, rtResolution);
+    const ctx = canvas.getContext('2d');
 
-      const baseUrl = (layerOpacity === 1 ? canvas: asOpacity(canvas, layerOpacity)).toDataURL('PNG');
-      return {
-        extent: rtExtent,
-        baseURL: baseUrl,
-      };
+    featuresExtents.forEach(ft => {
+      const transform = createWorldToVectorContextTransform(rtExtent, canvas.width, canvas.height);
+      if (MVTEncoder.useImmediateAPI) {
+        this.drawFeaturesToContextUsingImmediateAPI_(ft.features, layerStyleFunction, styleResolution, transform, vectorContext);
+      } else {
+        this.drawFeaturesToContextUsingRenderAPI_(ft, layerStyleFunction, styleResolution, transform, ctx!, renderBuffer, decluterTree);
+      }
+    });
+
+    const baseUrl = (layerOpacity === 1 ? canvas : asOpacity(canvas, layerOpacity)).toDataURL('PNG');
+    return {
+      extent: rtExtent,
+      baseURL: baseUrl,
+    };
   }
 }
