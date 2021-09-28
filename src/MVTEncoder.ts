@@ -8,14 +8,14 @@ import {
   getWidth as getExtentWidth,
 } from 'ol/extent.js';
 import {MVT} from 'ol/format.js';
-import {PoolDownloader} from './PoolDownloader.ts';
+import {PoolDownloader} from './PoolDownloader';
 import {Size} from 'ol/size.js';
 import {Transform} from 'ol/transform.js';
-import {asOpacity} from './canvasUtils.ts';
+import {asOpacity} from './canvasUtils';
 import {
   createWorldToVectorContextTransform,
   listTilesCoveringExtentAtResolution,
-} from './encodeutils.ts';
+} from './encodeutils';
 import {renderFeature} from 'ol/renderer/vector.js';
 import {toContext} from 'ol/render';
 import {transform2D} from 'ol/geom/flat/transform.js';
@@ -305,7 +305,7 @@ export default class MVTEncoder {
   computeReasonableTileResolution(
     tileGrid: TileGrid,
     monitorResolution: number,
-    tileResolution: number
+    tileResolution: number | undefined
   ): number {
     const targetResolution = tileResolution || monitorResolution;
     const resolutions = tileGrid.getResolutions();

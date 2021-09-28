@@ -5,7 +5,7 @@ import {Extent, getHeight, getWidth} from 'ol/extent.js';
 import {
   createWorldToVectorContextTransform,
   listTilesCoveringExtentAtResolution,
-} from './encodeutils.ts';
+} from './encodeutils';
 import {fromLonLat} from 'ol/proj.js';
 import {transform2D} from 'ol/geom/flat/transform.js';
 

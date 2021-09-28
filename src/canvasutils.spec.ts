@@ -1,6 +1,6 @@
 /* global test, expect */
 
-import {asOpacity} from './canvasUtils.ts';
+import {asOpacity} from './canvasUtils';
 
 const originalData =
   'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAACoAAAAkCAYAAAD/yagrAAAABmJLR0QA/wD/AP+gvaeTAAAARklEQVRYhe3OUQnAMBBAsa5i69/BzcI+HoxCoiDPzJl1gf134CvRmmhNtCZaE62J1kRrojXRmmhNtCZaE62J1kRrojXR2gvo0gOrl15u0wAAAABJRU5ErkJggg==';

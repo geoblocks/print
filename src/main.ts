@@ -1,2 +1,2 @@
-import MVTEncoder from './MVTEncoder.ts';
+import MVTEncoder from './MVTEncoder';
 export default MVTEncoder;

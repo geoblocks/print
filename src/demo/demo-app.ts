@@ -1,7 +1,7 @@
 import Feature from 'ol/Feature.js';
 import Icon from 'ol/style/Icon.js';
 import MVT from 'ol/format/MVT.js';
-import MVTEncoder from '../MVTEncoder.ts';
+import MVTEncoder from '../MVTEncoder';
 import OLMap from 'ol/Map.js';
 import OSM from 'ol/source/OSM.js';
 import Stroke from 'ol/style/Stroke.js';
@@ -18,14 +18,14 @@ import View from 'ol/View.js';
 import stylefunction from 'ol-mapbox-style/dist/stylefunction.js';
 import {Extent} from 'ol/extent.js';
 import {LitElement, TemplateResult, css, html} from 'lit';
-import {PDF_POINTS_PER_METER} from '../constants.ts';
-import {computePrintPosition, drawPaperDimensions} from '../postcompose.ts';
+import {PDF_POINTS_PER_METER} from '../constants';
+import {computePrintPosition, drawPaperDimensions} from '../postcompose';
 import {customElement, query, state} from 'lit/decorators.js';
 import {extentFromProjection} from 'ol/tilegrid.js';
 import {fromLonLat, toLonLat} from 'ol/proj.js';
-import {olCss} from './css.ts';
+import {olCss} from './css';
 import {fromExtent as polygonFromExtent} from 'ol/geom/Polygon.js';
-import {printerIcon} from '../printer.ts';
+import {printerIcon} from '../printer';
 import {unsafeHTML} from 'lit/directives/unsafe-html.js';
 
 @customElement('demo-app')
@@ -119,6 +119,7 @@ export class DemoApp extends LitElement {
 
   createMap(): void {
     this.printExtentLayer = new VectorLayer({
+      // @ts-ignore
       'name': 'printExtent',
       source: new VectorSource({
         features: [],

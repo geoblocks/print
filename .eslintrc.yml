@@ -20,7 +20,10 @@ rules:
   jsdoc/require-param-type: off
   jsdoc/require-param-description: off
   import/named: off
+  import/extensions: off
+  import/no-unresolved: off
   no-console: off
   no-multi-assign: off
   "@typescript-eslint/no-non-null-assertion": off
   "@typescript-eslint/no-explicit-any": off
+  "@typescript-eslint/ban-ts-comment": off

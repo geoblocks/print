@@ -1,6 +1,6 @@
 /* global jest, test, expect */
 
-import MVTEncoder from './MVTEncoder.ts';
+import MVTEncoder from './MVTEncoder';
 import VectorTileLayer from 'ol/layer/VectorTile.js';
 import VectorTileSource from 'ol/source/VectorTile.js';
 import {Extent} from 'ol/extent';
