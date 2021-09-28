@@ -1,10 +1,9 @@
 const scratchOpacityCanvas = document.createElement('canvas');
 
-/**
- * @param {HTMLCanvasElement} inCanvas
- * @param {number} opacity
- */
- export function asOpacity(inCanvas, opacity) {
+export function asOpacity(
+  inCanvas: HTMLCanvasElement,
+  opacity: number
+): HTMLCanvasElement {
   const outCanvas = scratchOpacityCanvas;
   outCanvas.width = inCanvas.width;
   outCanvas.height = inCanvas.height;

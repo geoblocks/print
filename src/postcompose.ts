@@ -1,4 +1,11 @@
-export function computePrintPosition(dimensions, viewportWidth, viewportHeight) {
+import RenderEvent from 'ol/render/Event';
+import {Extent} from 'ol/extent';
+
+export function computePrintPosition(
+  dimensions: number[],
+  viewportWidth: number,
+  viewportHeight: number
+): Extent {
   const centerX = viewportWidth / 2;
   const centerY = viewportHeight / 2;
 
@@ -8,24 +15,33 @@ export function computePrintPosition(dimensions, viewportWidth, viewportHeight) 
   return [minX, minY, minX + paperSizePixelWidth, minY + paperSizePixelHeight];
 }
 
-/**
- * @param {ol.render.Event} event
- * @param {[number, number]} dimensions
- */
-export function drawPaperDimensions(event, dimensions) {
+export function drawPaperDimensions(
+  event: RenderEvent,
+  dimensions: number[]
+): void {
   const viewport = event.target.getViewport();
   const canvases = viewport.getElementsByTagName('canvas');
 
   const frameState = event.frameState;
-  const viewportWidth = Number((frameState.size[0] * frameState.pixelRatio).toFixed());
-  const viewportHeight = Number((frameState.size[1] * frameState.pixelRatio).toFixed());
+  const viewportWidth = Number(
+    (frameState.size[0] * frameState.pixelRatio).toFixed()
+  );
+  const viewportHeight = Number(
+    (frameState.size[1] * frameState.pixelRatio).toFixed()
+  );
 
-  for (let i = canvases.length - 1; i >= 0; i--) { // layer creates new canvas on high resolution devices
+  for (let i = canvases.length - 1; i >= 0; i--) {
+    // layer creates new canvas on high resolution devices
     const canvas = canvases.item(i);
     const context = canvas.getContext('2d');
 
-    if (canvas.width === viewportWidth && canvas.height === viewportHeight) { // checks for correct canvas
-      const printPosition = computePrintPosition(dimensions, viewportWidth, viewportHeight);
+    if (canvas.width === viewportWidth && canvas.height === viewportHeight) {
+      // checks for correct canvas
+      const printPosition = computePrintPosition(
+        dimensions,
+        viewportWidth,
+        viewportHeight
+      );
 
       context.beginPath();
 
@@ -33,7 +49,12 @@ export function drawPaperDimensions(event, dimensions) {
       context.rect(0, 0, viewportWidth, viewportHeight);
 
       // inner rectangle
-      context.rect(printPosition[0], printPosition[1], dimensions[0], dimensions[1]);
+      context.rect(
+        printPosition[0],
+        printPosition[1],
+        dimensions[0],
+        dimensions[1]
+      );
 
       context.fillStyle = 'rgba(0, 5, 25, 0.15)';
       context.fill('evenodd');

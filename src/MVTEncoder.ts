@@ -1,76 +1,88 @@
-import {MVT} from 'ol/format';
-import {getWidth as getExtentWidth, getHeight as getExtentHeight, Extent} from 'ol/extent.js';
-import {transform2D} from 'ol/geom/flat/transform.js';
-import {createWorldToVectorContextTransform, listTilesCoveringExtentAtResolution} from './encodeutils';
-import {toContext} from 'ol/render';
-import {PoolDownloader} from './PoolDownloader';
-import {Size} from 'ol/size';
+import CanvasImmediateRenderer from 'ol/render/canvas/Immediate.js';
 import RenderFeature from 'ol/render/Feature.js';
+import Style, {StyleFunction} from 'ol/style/Style.js';
+import VectorTileLayer from 'ol/layer/VectorTile.js';
+import {
+  Extent,
+  getHeight as getExtentHeight,
+  getWidth as getExtentWidth,
+} from 'ol/extent.js';
+import {MVT} from 'ol/format.js';
+import {PoolDownloader} from './PoolDownloader.ts';
+import {Size} from 'ol/size.js';
+import {Transform} from 'ol/transform.js';
+import {asOpacity} from './canvasUtils.ts';
+import {
+  createWorldToVectorContextTransform,
+  listTilesCoveringExtentAtResolution,
+} from './encodeutils.ts';
 import {renderFeature} from 'ol/renderer/vector.js';
-import Style, {StyleFunction} from 'ol/style/Style';
-import {Transform} from 'ol/transform';
-import CanvasImmediateRenderer from 'ol/render/canvas/Immediate';
-import VectorTileLayer from 'ol/layer/VectorTile';
-import {asOpacity} from './canvasUtils';
+import {toContext} from 'ol/render';
+import {transform2D} from 'ol/geom/flat/transform.js';
 
 import CanvasBuilderGroup from 'ol/render/canvas/BuilderGroup.js';
 import CanvasExecutorGroup from 'ol/render/canvas/ExecutorGroup.js';
 import RBush from 'rbush';
+import TileGrid from 'ol/tilegrid/TileGrid';
 
 const pool = new PoolDownloader();
 const mvtFormat = new MVT();
 
 interface PrintEncodeOptions {
-  canvasResolution?: number
-  tileResolution?: number
-  styleResolution?: number
-  monitorResolution?: number
-  monitorDPI?: number
-  paperDPI?: number
+  canvasResolution?: number;
+  tileResolution?: number;
+  styleResolution?: number;
+  monitorResolution?: number;
+  monitorDPI?: number;
+  paperDPI?: number;
 }
 
 interface PrintResult {
-  extent: Extent,
-  baseURL: string,
+  extent: Extent;
+  baseURL: string;
 }
 
 interface ToDraw {
-  zIndex: number | undefined
-  feature: RenderFeature
-  naturalOrder: number
-  styleIdx: number
+  zIndex: number | undefined;
+  feature: RenderFeature;
+  naturalOrder: number;
+  styleIdx: number;
 }
 
 interface RenderTile {
-  printExtent: Extent
+  printExtent: Extent;
 }
 
 interface _FeatureExtent {
-  features: RenderFeature[],
-  extent: Extent,
-  url: string
+  features: RenderFeature[];
+  extent: Extent;
+  url: string;
 }
 
 /**
  * Encode an OpenLayers MVT layer to a list of canvases.
  */
 export default class MVTEncoder {
-
   static useImmediateAPI = false;
 
   /**
-   *
-   * @param features A list of features to render (in world coordinates)
+   * @param featuresExtent A list of features to render (in world coordinates)
    * @param styleFunction The style function for the features
    * @param styleResolution The resolution used in the style function
    * @param coordinateToPixelTransform World to CSS coordinates transform (top-left is 0)
-   * @param vectorContext
+   * @param context
+   * @param renderBuffer
+   * @param declutterTree
    */
   private drawFeaturesToContextUsingRenderAPI_(
-    featuresExtent: _FeatureExtent, styleFunction: StyleFunction, styleResolution: number,
-    coordinateToPixelTransform: Transform, context: CanvasRenderingContext2D,
-    renderBuffer: number, declutterTree?: RBush<any>) {
-
+    featuresExtent: _FeatureExtent,
+    styleFunction: StyleFunction,
+    styleResolution: number,
+    coordinateToPixelTransform: Transform,
+    context: CanvasRenderingContext2D,
+    renderBuffer: number,
+    declutterTree?: RBush<any>
+  ) {
     const pixelRatio = 1;
     const builderGroup = new CanvasBuilderGroup(
       0,
@@ -94,6 +106,7 @@ export default class MVTEncoder {
     }
 
     /**
+     * @param feature
      * @this {CanvasVectorTileLayerRenderer}
      */
     const localRenderFeature = function (feature: RenderFeature) {
@@ -109,15 +122,16 @@ export default class MVTEncoder {
         }
         const tolerance = 0;
         for (const style of styles) {
-          loading = renderFeature(
-            builderGroup,
-            feature,
-            style,
-            tolerance,
-            listener,
-            undefined,
-            declutterBuilderGroup
-          ) || loading;
+          loading =
+            renderFeature(
+              builderGroup,
+              feature,
+              style,
+              tolerance,
+              listener,
+              undefined,
+              declutterBuilderGroup
+            ) || loading;
         }
       }
     };
@@ -134,7 +148,7 @@ export default class MVTEncoder {
       pixelRatio,
       sourceHasOverlaps,
       executorGroupInstructions,
-      renderBuffer,
+      renderBuffer
     );
     const scale = 1;
     const transform = coordinateToPixelTransform;
@@ -163,12 +177,12 @@ export default class MVTEncoder {
         scale,
         transform,
         viewRotation,
-        snapToPixel, undefined,
+        snapToPixel,
+        undefined,
         declutterTree
       );
     }
   }
-
 
   /**
    *
@@ -178,8 +192,13 @@ export default class MVTEncoder {
    * @param coordinateToPixelTransform World to CSS coordinates transform (top-left is 0)
    * @param vectorContext
    */
-  private drawFeaturesToContextUsingImmediateAPI_(features: RenderFeature[], styleFunction: StyleFunction, styleResolution: number,
-    coordinateToPixelTransform: Transform, vectorContext: CanvasImmediateRenderer) {
+  private drawFeaturesToContextUsingImmediateAPI_(
+    features: RenderFeature[],
+    styleFunction: StyleFunction,
+    styleResolution: number,
+    coordinateToPixelTransform: Transform,
+    vectorContext: CanvasImmediateRenderer
+  ) {
     const toDraw: ToDraw[] = [];
     let i = 0;
     features.forEach((f) => {
@@ -190,7 +209,7 @@ export default class MVTEncoder {
             zIndex: styles.getZIndex(),
             feature: f,
             naturalOrder: ++i,
-            styleIdx: -1
+            styleIdx: -1,
           });
         } else {
           styles.forEach((style, sIdx) => {
@@ -198,7 +217,7 @@ export default class MVTEncoder {
               zIndex: style.getZIndex(),
               feature: f,
               naturalOrder: ++i,
-              styleIdx: sIdx
+              styleIdx: sIdx,
             });
           });
         }
@@ -226,7 +245,7 @@ export default class MVTEncoder {
       // Keep it simple by systematically getting the geometry either from the style or from the feature
       // Then the coordinates are transformed
       let geometry = style.getGeometry();
-      if (typeof geometry === "function") {
+      if (typeof geometry === 'function') {
         geometry = geometry();
       }
       if (!geometry) {
@@ -234,19 +253,27 @@ export default class MVTEncoder {
       }
 
       // poor man copy
-      geometry = Object.assign(Object.create(Object.getPrototypeOf(geometry)), geometry);
+      geometry = Object.assign(
+        Object.create(Object.getPrototypeOf(geometry)),
+        geometry
+      );
       // FIXME: can we avoid accessing private properties?
       const inCoos = geometry['flatCoordinates_'];
-      const outCoos = geometry['flatCoordinates_'] = new Array(inCoos.length);
+      const outCoos = (geometry['flatCoordinates_'] = new Array(inCoos.length));
       const stride = geometry.getStride();
-      transform2D(inCoos, 0, inCoos.length, stride, coordinateToPixelTransform, outCoos);
+      transform2D(
+        inCoos,
+        0,
+        inCoos.length,
+        stride,
+        coordinateToPixelTransform,
+        outCoos
+      );
 
       // Finally draw the feature with previously set style
       vectorContext.drawGeometry(geometry);
     }
   }
-
-
 
   /**
    * Adjust size of the canvas and wrap it into the OL immediate API.
@@ -254,14 +281,19 @@ export default class MVTEncoder {
    * @param targetExtent The extent for this canvas, in world coordinates
    * @param resolution The resolution for this canvas (will influence the size of the canvas)
    */
-  createRenderContext(canvas: HTMLCanvasElement, targetExtent: Extent, resolution: number): CanvasImmediateRenderer {
+  createRenderContext(
+    canvas: HTMLCanvasElement,
+    targetExtent: Extent,
+    resolution: number
+  ): CanvasImmediateRenderer {
     const width = getExtentWidth(targetExtent) / resolution;
     const height = getExtentHeight(targetExtent) / resolution;
     const size: Size = [width, height];
-    console.log('createRenderContext', ...size);
     const ctx = canvas.getContext('2d');
     if (!ctx) {
-      throw new Error(`Could not get the context ${canvas.width}x${canvas.height}, expected ${width}x${height})`);
+      throw new Error(
+        `Could not get the context ${canvas.width}x${canvas.height}, expected ${width}x${height})`
+      );
     }
     const vectorContext = toContext(ctx, {
       size,
@@ -270,7 +302,11 @@ export default class MVTEncoder {
     return vectorContext;
   }
 
-  computeReasonableTileResolution(tileGrid, monitorResolution, tileResolution) {
+  computeReasonableTileResolution(
+    tileGrid: TileGrid,
+    monitorResolution: number,
+    tileResolution: number
+  ): number {
     const targetResolution = tileResolution || monitorResolution;
     const resolutions = tileGrid.getResolutions();
     let resolution = resolutions[resolutions.length - 2]; // the last one is exclusive?
@@ -290,26 +326,41 @@ export default class MVTEncoder {
    * @param layer
    * @param defaultResolution
    * @param printExtent
+   * @param options
    */
-  async encodeMVTLayer(layer: VectorTileLayer, defaultResolution: number, printExtent: Extent, options: PrintEncodeOptions = {}): Promise<PrintResult[]> {
+  async encodeMVTLayer(
+    layer: VectorTileLayer,
+    defaultResolution: number,
+    printExtent: Extent,
+    options: PrintEncodeOptions = {}
+  ): Promise<PrintResult[]> {
     const renderBuffer = layer.getRenderBuffer() ?? 100;
     const source = layer.getSource();
     const projection = source.getProjection();
     const tileGrid = source.getTileGrid();
     const monitorResolution = options.monitorResolution || defaultResolution;
-    const tileResolution = this.computeReasonableTileResolution(tileGrid, monitorResolution, options.tileResolution);
-    const mvtTiles = listTilesCoveringExtentAtResolution(printExtent, tileResolution, tileGrid);
+    const tileResolution = this.computeReasonableTileResolution(
+      tileGrid,
+      monitorResolution,
+      options.tileResolution
+    );
+    const mvtTiles = listTilesCoveringExtentAtResolution(
+      printExtent,
+      tileResolution,
+      tileGrid
+    );
 
     const urlFunction = source.getTileUrlFunction();
-    const featuresPromises = mvtTiles.map(t => {
+    const featuresPromises = mvtTiles.map((t) => {
       // pixelratio and projection are not used
       const url = urlFunction(t.coord, 1, projection);
       if (!url) {
         return Promise.reject('Could not create URL');
       }
-      return pool.fetch(url)
-        .then(r => r.arrayBuffer())
-        .then(data => {
+      return pool
+        .fetch(url)
+        .then((r) => r.arrayBuffer())
+        .then((data) => {
           const features = mvtFormat.readFeatures(data, {
             extent: t.extent,
             featureProjection: projection,
@@ -317,25 +368,28 @@ export default class MVTEncoder {
           return {
             features,
             extent: t.extent,
-            url
+            url,
           };
         });
     });
 
     const featuresAndExtents = (await Promise.allSettled(featuresPromises))
-      .filter(r => r.status === 'fulfilled')
-      .map(r => (r as PromiseFulfilledResult<_FeatureExtent>).value)
+      .filter((r) => r.status === 'fulfilled')
+      .map((r) => (r as PromiseFulfilledResult<_FeatureExtent>).value);
 
     // determinate a reasonable number of paving tiles for the rendering
     // this depend on the size of the tiles
-    const renderTiles: RenderTile[] = [{
-      printExtent // print extent
-    }];
+    const renderTiles: RenderTile[] = [
+      {
+        printExtent, // print extent
+      },
+    ];
 
     // By default we want 254 DPI on paper VS 96 DPI on the display
     const paperDPI = options.paperDPI || 254;
     const monitorDPI = options.monitorDPI || 96;
-    const rtResolution = options.canvasResolution || monitorDPI / paperDPI * monitorResolution;
+    const rtResolution =
+      options.canvasResolution || (monitorDPI / paperDPI) * monitorResolution;
     const styleResolution = options.styleResolution || tileResolution;
     const layerStyleFunction = layer.getStyleFunction()!; // there is always a default one
     const layerOpacity = layer.get('opacity');
@@ -343,34 +397,69 @@ export default class MVTEncoder {
     const decluterTree = layer.getDeclutter() ? new RBush<any>(9) : undefined;
 
     // render to these tiles;
-    const encodedLayers = renderTiles.map(rt => this.renderTile(
-      featuresAndExtents, rt.printExtent,
-      rtResolution, styleResolution,
-      layerStyleFunction, layerOpacity, renderBuffer,
-      decluterTree,
-    ));
+    const encodedLayers = renderTiles.map((rt) =>
+      this.renderTile(
+        featuresAndExtents,
+        rt.printExtent,
+        rtResolution,
+        styleResolution,
+        layerStyleFunction,
+        layerOpacity,
+        renderBuffer,
+        decluterTree
+      )
+    );
     return encodedLayers;
   }
 
-
-  renderTile(featuresExtents: _FeatureExtent[], rtExtent: Extent,
-    rtResolution: number, styleResolution: number,
-    layerStyleFunction: StyleFunction, layerOpacity: number,
-    renderBuffer: number, decluterTree?: RBush<any>): PrintResult {
+  renderTile(
+    featuresExtents: _FeatureExtent[],
+    rtExtent: Extent,
+    rtResolution: number,
+    styleResolution: number,
+    layerStyleFunction: StyleFunction,
+    layerOpacity: number,
+    renderBuffer: number,
+    decluterTree?: RBush<any>
+  ): PrintResult {
     const canvas = document.createElement('canvas');
-    const vectorContext = this.createRenderContext(canvas, rtExtent, rtResolution);
+    const vectorContext = this.createRenderContext(
+      canvas,
+      rtExtent,
+      rtResolution
+    );
     const ctx = canvas.getContext('2d');
 
-    featuresExtents.forEach(ft => {
-      const transform = createWorldToVectorContextTransform(rtExtent, canvas.width, canvas.height);
+    featuresExtents.forEach((ft) => {
+      const transform = createWorldToVectorContextTransform(
+        rtExtent,
+        canvas.width,
+        canvas.height
+      );
       if (MVTEncoder.useImmediateAPI) {
-        this.drawFeaturesToContextUsingImmediateAPI_(ft.features, layerStyleFunction, styleResolution, transform, vectorContext);
+        this.drawFeaturesToContextUsingImmediateAPI_(
+          ft.features,
+          layerStyleFunction,
+          styleResolution,
+          transform,
+          vectorContext
+        );
       } else {
-        this.drawFeaturesToContextUsingRenderAPI_(ft, layerStyleFunction, styleResolution, transform, ctx!, renderBuffer, decluterTree);
+        this.drawFeaturesToContextUsingRenderAPI_(
+          ft,
+          layerStyleFunction,
+          styleResolution,
+          transform,
+          ctx!,
+          renderBuffer,
+          decluterTree
+        );
       }
     });
 
-    const baseUrl = (layerOpacity === 1 ? canvas : asOpacity(canvas, layerOpacity)).toDataURL('PNG');
+    const baseUrl = (
+      layerOpacity === 1 ? canvas : asOpacity(canvas, layerOpacity)
+    ).toDataURL('PNG');
     return {
       extent: rtExtent,
       baseURL: baseUrl,
