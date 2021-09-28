@@ -20,6 +20,7 @@
       "jest-canvas-mock"
     ]
   },
+  "license": "BSD-2-Clause",
   "scripts": {
     "lint": "eslint src --ext .ts,.js",
     "start": "vite",
