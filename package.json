@@ -12,8 +12,8 @@
   "type": "module",
   "types": "types/main.d.ts",
   "files": [
-    "dist",
-    "types"
+    "dist/print.es.js",
+    "types/*.d.ts"
   ],
   "jest": {
     "setupFiles": [

@@ -4,3 +4,4 @@ dist
 types
 *.local
 /coverage
+/geoblocks-print-*.tgz
