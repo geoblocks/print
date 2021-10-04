@@ -72,6 +72,11 @@ export class DemoApp extends LitElement {
   @state()
   private zoom = -1;
 
+  private currentDemo: string | undefined;
+
+  @state()
+  private shouldDeclutter = false;
+
   configureVTStyle(layer: VectorTileLayer, url: string): void {
     fetch(url)
       .then((r) => r.json())
@@ -135,7 +140,7 @@ export class DemoApp extends LitElement {
     this.configureSimpleDemo();
 
     this.map.on('postcompose', (evt) => {
-      const res = evt.frameState.viewState.resolution;
+      const res = evt.frameState!.viewState.resolution;
       //const printResolution = 1 / PIXELS_PER_METER / this.printScale;
       drawPaperDimensions(evt, this.getPrintDimensions(res));
     });
@@ -188,6 +193,7 @@ export class DemoApp extends LitElement {
 
   configureSimpleDemo(): void {
     this.mvtLayer = new VectorTileLayer({
+      declutter: this.shouldDeclutter,
       style(feature) {
         if (feature.getGeometry()?.getType() === 'Point') {
           return new Style({
@@ -236,10 +242,26 @@ export class DemoApp extends LitElement {
     this.map?.getView().setCenter(fromLonLat([6.57253, 46.51336]));
   }
 
-  configureMapboxDemo(): void {
+  configureMapboxDemo1(): void {
+    this.configureMapboxDemo(
+      'https://adv-smart.de/tiles/smarttiles_de_public/{z}/{x}/{y}.pbf',
+      //'https://dev.adv-smart.de/styles/public/v0/de_style_grey.json'
+      'https://adv-smart.de/styles/public/de_style_hillshade.json'
+    );
+  }
+
+  configureMapboxDemo2(): void {
+    this.configureMapboxDemo(
+      'https://adv-smart.de/tiles/smarttiles_de_public_v1/{z}/{x}/{y}.pbf',
+      'https://adv-smart.de/styles/public/de_style_hillshade.json'
+    );
+  }
+
+  configureMapboxDemo(pbfURL: string, styleURL: string): void {
     const extent = extentFromProjection('EPSG:3857');
     const origin = [extent[0], extent[3]];
     this.mvtLayer = new VectorTileLayer({
+      declutter: this.shouldDeclutter,
       source: new VectorTileSource({
         format: new MVT(),
         tileGrid: new TileGrid({
@@ -255,15 +277,11 @@ export class DemoApp extends LitElement {
           extent: extent,
           origin: origin,
         }),
-        url: 'https://adv-smart.de/tiles/smarttiles_de_public/{z}/{x}/{y}.pbf',
+        url: pbfURL,
         maxZoom: 14,
       }),
     });
-    this.configureVTStyle(
-      this.mvtLayer,
-      //'https://dev.adv-smart.de/styles/public/v0/de_style_grey.json'
-      'https://adv-smart.de/styles/public/de_style_hillshade.json'
-    );
+    this.configureVTStyle(this.mvtLayer, styleURL);
 
     const layers = this.map?.getLayers();
     layers!.clear();
@@ -278,16 +296,20 @@ export class DemoApp extends LitElement {
       }),
     ];
     layers!.extend(newLayers);
-    this.map?.getView().setCenter(fromLonLat([8.355, 47.576]));
+    this.map?.getView().setCenter(fromLonLat([9.9909, 53.54777]));
   }
 
-  updateDemo(demo: string): void {
+  updateDemo(demo: string | undefined): void {
+    this.currentDemo = demo;
     switch (demo) {
       case 'simple':
         this.configureSimpleDemo();
         break;
-      case 'mapbox':
-        this.configureMapboxDemo();
+      case 'mapbox1':
+        this.configureMapboxDemo1();
+        break;
+      case 'mapbox2':
+        this.configureMapboxDemo2();
         break;
       default:
     }
@@ -315,8 +337,16 @@ export class DemoApp extends LitElement {
         @change=${(evt) => this.updateDemo(evt.target.value)}
       >
         <option value="simple">Basic style function</option>
-        <option value="mapbox">OL-Mapbox-style</option>
+        <option value="mapbox1">OL-Mapbox-style1</option>
+        <option value="mapbox2">OL-Mapbox-style2</option>
       </select>
+      <label>
+        <input type="checkbox" ?checked=${this.shouldDeclutter}
+         @change=${evt => {
+           this.shouldDeclutter = evt.target.checked;
+           this.updateDemo(this.currentDemo);
+         }}>declutter</input>
+      </label>
       <div>${extent || 'Move around and click the print button...'}</div>
       <div>zoom: ${this.zoom.toFixed(1)}</div>
       <div>
