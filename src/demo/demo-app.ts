@@ -1,4 +1,5 @@
 import Feature from 'ol/Feature.js';
+import Geometry from 'ol/geom/Geometry';
 import Icon from 'ol/style/Icon.js';
 import MVT from 'ol/format/MVT.js';
 import MVTEncoder from '../MVTEncoder';
@@ -62,7 +63,7 @@ export class DemoApp extends LitElement {
 
   private map?: OLMap;
   private mvtLayer?: VectorTileLayer;
-  private printExtentLayer?: VectorLayer;
+  private printExtentLayer?: VectorLayer<VectorSource<Geometry>>;
   private targetSizeInPdfPoints = [510, 710]; // 72pts / inch => ~[18cm, 25cm]
   private printScale = 1 / 5000;
 
@@ -342,7 +343,7 @@ export class DemoApp extends LitElement {
       </select>
       <label>
         <input type="checkbox" ?checked=${this.shouldDeclutter}
-         @change=${evt => {
+         @change=${(evt) => {
            this.shouldDeclutter = evt.target.checked;
            this.updateDemo(this.currentDemo);
          }}>declutter</input>

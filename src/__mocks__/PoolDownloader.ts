@@ -1,4 +1,5 @@
 import fetch from 'node-fetch';
+// @ts-ignore
 global.fetch = fetch;
 import fs from 'fs';
 
@@ -24,6 +25,7 @@ export class PoolDownloader {
           } as unknown as Response)
       );
     }
+    // @ts-ignore
     return this.fetcher(input, init);
   }
 }

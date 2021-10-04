@@ -110,7 +110,7 @@ export default class MVTEncoder {
      * @this {CanvasVectorTileLayerRenderer}
      */
     const localRenderFeature = function (feature: RenderFeature) {
-      let styles: Style[] | Style | undefined;
+      let styles: Style[] | Style | undefined | void;
       const sf = feature.getStyleFunction() || styleFunction;
       if (sf) {
         styles = sf(feature, styleResolution);

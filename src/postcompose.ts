@@ -1,3 +1,4 @@
+import Map from 'ol/Map';
 import RenderEvent from 'ol/render/Event';
 import {Extent} from 'ol/extent';
 
@@ -19,10 +20,10 @@ export function drawPaperDimensions(
   event: RenderEvent,
   dimensions: number[]
 ): void {
-  const viewport = event.target.getViewport();
+  const viewport = (event.target as Map).getViewport();
   const canvases = viewport.getElementsByTagName('canvas');
 
-  const frameState = event.frameState;
+  const frameState = event.frameState!;
   const viewportWidth = Number(
     (frameState.size[0] * frameState.pixelRatio).toFixed()
   );
@@ -32,8 +33,8 @@ export function drawPaperDimensions(
 
   for (let i = canvases.length - 1; i >= 0; i--) {
     // layer creates new canvas on high resolution devices
-    const canvas = canvases.item(i);
-    const context = canvas.getContext('2d');
+    const canvas = canvases.item(i)!;
+    const context = canvas.getContext('2d')!;
 
     if (canvas.width === viewportWidth && canvas.height === viewportHeight) {
       // checks for correct canvas
