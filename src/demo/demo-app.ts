@@ -2,7 +2,7 @@ import Feature from 'ol/Feature.js';
 import Geometry from 'ol/geom/Geometry';
 import Icon from 'ol/style/Icon.js';
 import MVT from 'ol/format/MVT.js';
-import MVTEncoder from '../MVTEncoder';
+import MVTEncoder, {PrintEncodeOptions} from '../MVTEncoder';
 import OLMap from 'ol/Map.js';
 import OSM from 'ol/source/OSM.js';
 import Stroke from 'ol/style/Stroke.js';
@@ -194,10 +194,14 @@ export class DemoApp extends LitElement {
         geometry: polygonFromExtent(printExtent),
       })
     );
+    const options: PrintEncodeOptions = {
+      canvasResolution: 3, // FIXME: properly compute this number
+    };
     const result = await encoder.encodeMVTLayer(
       this.mvtLayer!,
       viewResolution,
-      printExtent
+      printExtent,
+      options
     );
     console.log(result);
     this.result0 = result[0];
