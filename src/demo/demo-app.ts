@@ -29,6 +29,12 @@ import {fromExtent as polygonFromExtent} from 'ol/geom/Polygon.js';
 import {printerIcon} from '../printer';
 import {unsafeHTML} from 'lit/directives/unsafe-html.js';
 
+const defaults = {
+  demo: 'mapbox2',
+  declutter: true,
+  immediateApi: false,
+};
+
 @customElement('demo-app')
 export class DemoApp extends LitElement {
   static styles = [
@@ -73,10 +79,13 @@ export class DemoApp extends LitElement {
   @state()
   private zoom = -1;
 
-  private currentDemo: string | undefined;
+  private currentDemo = defaults.demo;
 
   @state()
-  private shouldDeclutter = false;
+  private shouldDeclutter = defaults.declutter;
+
+  @state()
+  private useImmediateApi = defaults.immediateApi;
 
   configureVTStyle(layer: VectorTileLayer, url: string): void {
     fetch(url)
@@ -138,7 +147,8 @@ export class DemoApp extends LitElement {
         zoom: 14,
       }),
     });
-    this.configureSimpleDemo();
+    this.shouldDeclutter = defaults.declutter;
+    this.updateDemo(defaults.demo);
 
     this.map.on('postcompose', (evt) => {
       const res = evt.frameState!.viewState.resolution;
@@ -164,6 +174,7 @@ export class DemoApp extends LitElement {
   }
 
   async print(): Promise<void> {
+    MVTEncoder.useImmediateAPI = this.useImmediateApi;
     const encoder = new MVTEncoder();
     const viewResolution = this.map!.getView().getResolution()!;
     const size = this.map!.getSize()!;
@@ -300,7 +311,7 @@ export class DemoApp extends LitElement {
     this.map?.getView().setCenter(fromLonLat([9.9909, 53.54777]));
   }
 
-  updateDemo(demo: string | undefined): void {
+  updateDemo(demo: string): void {
     this.currentDemo = demo;
     switch (demo) {
       case 'simple':
@@ -347,6 +358,12 @@ export class DemoApp extends LitElement {
            this.shouldDeclutter = evt.target.checked;
            this.updateDemo(this.currentDemo);
          }}>declutter</input>
+      </label>
+      <label>
+        <input type="checkbox" ?checked=${this.useImmediateApi}
+         @change=${(evt) => {
+           this.useImmediateApi = evt.target.checked;
+         }}>immediate API</input>
       </label>
       <div>${extent || 'Move around and click the print button...'}</div>
       <div>zoom: ${this.zoom.toFixed(1)}</div>

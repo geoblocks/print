@@ -109,14 +109,14 @@ export default class MVTEncoder {
      * @param feature
      * @this {CanvasVectorTileLayerRenderer}
      */
-    const localRenderFeature = function (feature: RenderFeature) {
+    const localRenderFeature = function (feature: RenderFeature): boolean {
       let styles: Style[] | Style | undefined | void;
       const sf = feature.getStyleFunction() || styleFunction;
       if (sf) {
         styles = sf(feature, styleResolution);
       }
+      let loading = false;
       if (styles) {
-        let loading = false;
         if (!Array.isArray(styles)) {
           styles = [styles];
         }
@@ -134,11 +134,15 @@ export default class MVTEncoder {
             ) || loading;
         }
       }
+      return loading;
     };
 
+    let loading = false;
     featuresExtent.features.forEach((f) => {
-      localRenderFeature(f);
+      loading = localRenderFeature(f) || loading;
     });
+
+    console.log('FIXME: some styles are still loading');
 
     const sourceHasOverlaps = true; // we don't care about performance
     const executorGroupInstructions = builderGroup.finish();
@@ -154,6 +158,7 @@ export default class MVTEncoder {
     const transform = coordinateToPixelTransform;
     const viewRotation = 0;
     const snapToPixel = true;
+
     renderingExecutorGroup.execute(
       context,
       scale,
@@ -161,7 +166,7 @@ export default class MVTEncoder {
       viewRotation,
       snapToPixel,
       undefined,
-      declutterTree
+      null // we don't want to declutter the base layer
     );
     if (declutterBuilderGroup) {
       const declutterExecutorGroup = new CanvasExecutorGroup(
