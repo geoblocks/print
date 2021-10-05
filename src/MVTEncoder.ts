@@ -28,12 +28,33 @@ import TileGrid from 'ol/tilegrid/TileGrid';
 const pool = new PoolDownloader();
 const mvtFormat = new MVT();
 
-interface PrintEncodeOptions {
+export interface PrintEncodeOptions {
+  /**
+   * The resolution of the output canvas (OpenLayers resolution).
+   * You should provide this value if you have a requirement on the output size of the canvas.
+   */
   canvasResolution?: number;
+  /**
+   * The resolution to use for retrieving the PBF files (OpenLayers resolution).
+   * This will directly impact the quantity of details.
+   */
   tileResolution?: number;
+  /**
+   * The resolution to use for styling the features (OpenLayers resolution).
+   * This is the one passed to the style function.
+   */
   styleResolution?: number;
+  /**
+   * The resolution of the view (OpenLayers resolution, typically the view resolution)
+   */
   monitorResolution?: number;
+  /**
+   * The resolution of the monitor. Defaults to 96 DPI.
+   */
   monitorDPI?: number;
+  /**
+   * The resolution of the printer. Defaults to 254 DPI.
+   */
   paperDPI?: number;
 }
 
@@ -307,12 +328,7 @@ export default class MVTEncoder {
     return vectorContext;
   }
 
-  computeReasonableTileResolution(
-    tileGrid: TileGrid,
-    monitorResolution: number,
-    tileResolution: number | undefined
-  ): number {
-    const targetResolution = tileResolution || monitorResolution;
+  snapTileResolution(tileGrid: TileGrid, targetResolution: number): number {
     const resolutions = tileGrid.getResolutions();
     let resolution = resolutions[resolutions.length - 2]; // the last one is exclusive?
     for (let i = resolutions.length - 2; i >= 0; i--) {
@@ -328,10 +344,10 @@ export default class MVTEncoder {
 
   /**
    *
-   * @param layer
-   * @param defaultResolution
-   * @param printExtent
-   * @param options
+   * @param layer The VectorTileLayer to rasterize
+   * @param defaultResolution The resolution to fallback when specific resolution is not available in options
+   * @param printExtent The extent that should be printed (in map coordinates)
+   * @param options Extra options
    */
   async encodeMVTLayer(
     layer: VectorTileLayer,
@@ -344,11 +360,8 @@ export default class MVTEncoder {
     const projection = source.getProjection();
     const tileGrid = source.getTileGrid();
     const monitorResolution = options.monitorResolution || defaultResolution;
-    const tileResolution = this.computeReasonableTileResolution(
-      tileGrid,
-      monitorResolution,
-      options.tileResolution
-    );
+    const targetResolution = options.tileResolution || monitorResolution;
+    const tileResolution = this.snapTileResolution(tileGrid, targetResolution);
     const mvtTiles = listTilesCoveringExtentAtResolution(
       printExtent,
       tileResolution,
@@ -374,7 +387,7 @@ export default class MVTEncoder {
             features,
             extent: t.extent,
             url,
-          };
+          } as _FeatureExtent;
         });
     });
 
@@ -382,8 +395,10 @@ export default class MVTEncoder {
       .filter((r) => r.status === 'fulfilled')
       .map((r) => (r as PromiseFulfilledResult<_FeatureExtent>).value);
 
-    // determinate a reasonable number of paving tiles for the rendering
-    // this depend on the size of the tiles
+    // TODO:
+    // decide on a reasonable number of paving tiles for the rendering
+    // this depends on the size of the tiles in pixels.
+    // This will be necessary when working with A0 or such big outputs.
     const renderTiles: RenderTile[] = [
       {
         printExtent, // print extent
