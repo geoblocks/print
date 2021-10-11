@@ -31,7 +31,6 @@
     "@babel/preset-typescript": "^7.15.0",
     "@openlayers/eslint-plugin": "^4.0.0",
     "@types/jest": "^27.0.2",
-    "@types/ol": "^6.5.3",
     "@typescript-eslint/eslint-plugin": "^4.33.0",
     "@typescript-eslint/parser": "^4.33.0",
     "canvas": "^2.8.0",
