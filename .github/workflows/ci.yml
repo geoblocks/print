@@ -1,0 +1,27 @@
+name: CI
+
+on: [push]
+
+env:
+  IN_CI: "1"
+
+jobs:
+  build:
+    runs-on: ubuntu-20.04
+    timeout-minutes: 5
+
+    steps:
+      - uses: actions/checkout@v2
+
+      - name: Npm setup
+        run: node --version && npm ci && du -sh node_modules
+
+      - name: Lint
+        run: npm run lint
+
+      - name: Test
+        run: npm run test
+
+      - name: Build
+        run: npm run build
+

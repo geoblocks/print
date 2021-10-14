@@ -1,13 +1,15 @@
-import VectorTileLayer from 'ol/layer/VectorTile';
-import VectorTileSource from 'ol/source/VectorTile';
+/* global jest, test, expect */
+
 import MVTEncoder from './MVTEncoder';
-import {MVT} from 'ol/format';
+import VectorTileLayer from 'ol/layer/VectorTile.js';
+import VectorTileSource from 'ol/source/VectorTile.js';
 import {Extent} from 'ol/extent';
-import {fromLonLat} from 'ol/proj';
+import {MVT} from 'ol/format.js';
+import {fromLonLat} from 'ol/proj.js';
 
-jest.mock('./PoolDownloader')
+jest.mock('./PoolDownloader');
 
-test('encodeMVTLayer', async () => {
+test('encodeMVTLayer with immediate API', async () => {
   const encoder = new MVTEncoder();
 
   const mvtLayer = new VectorTileLayer({
@@ -15,23 +17,80 @@ test('encodeMVTLayer', async () => {
       format: new MVT(),
       url: '/tiles/{z}/{x}/{y}.pbf',
       maxZoom: 14,
-    })
+    }),
   });
 
   const printExtent = [
     ...fromLonLat([6.57119, 46.51325]),
-    ...fromLonLat([6.57312, 46.51397])
+    ...fromLonLat([6.57312, 46.51397]),
   ] as Extent;
 
+  MVTEncoder.useImmediateAPI = true;
   const results = await encoder.encodeMVTLayer(mvtLayer, 10, printExtent);
-  expect(results).toStrictEqual([{
-    "baseURL": "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAADgAAAAeCAYAAAB5c901AAAABmJLR0QA/wD/AP+gvaeTAAACQElEQVRYhe2XS0hUYRiGn+/MNdGRLhAtXBTtDCJnFHTlLKRNES26QLkwokGoFq1biMu2U6QSzCIqUKigoKiFLowoZygCt7WrCC84ienonLdF2mVjm/N3DuSz/eF9v+cczv9xjJBoG6mcNKmUjNVaXp7vmnPV47kK/huZj9X7wGzNT55z2ROa4MRAfk3YEOLiidHRmKue0AQBDI0Auz/M7T3iqiNUwUohN2PonrDLrjpCFQTAp4iRbx953eoiPnTBcn/7G8RkXbFLLvJDFwTAKBrq7bj+amfQ0ZEQbPr09QEwW0/G+oLOjoSgy5URCUH4tTLez+87GmRuZAQrhdyMsLuIQC+byAgCxKxexMjnbk4dCCozUoJTFzreIibxgnuLkRIEwCgKOxvUyoic4MbKWEvEA/nLiJzg+sooeviHw57FHZJ1l8bTYY+xxWZ0l8bT2eFyg+ueUL7BtluV/dVa5pGha6674q4LNsgOl3cJO+Xhn1FdncC0sCuue81leHdpPF1dyfSYqRc4BswCY8BYpZCbdNm9QfCCA/KyeypdhnqFnQYSwGPJbmc+V59MDOTXAu/chJ+CrTemG1PJ5UMx+ak6XpNJcaBZmGfSdpnFzJQBEiY1yiyN2AY0CEuZ1IiRAFqAHRjPEHeAh5VCbulfSv2OZYfKV83UI6yTH0+7DlSBVWARWAa+IZZktmJocf1swZAvs3l8fGABWDU0U1Py6bv+g19CcvqDOMZxmT33fW+wObXwYqIvvxz2UFts8R/xHZ4RydgysAJuAAAAAElFTkSuQmCC",
-    "extent": [731501.5247058513, 5862982.857784151, 731716.3713230825, 5863099.32407374],
-  }]);
+  expect(results).toStrictEqual([
+    {
+      'baseURL':
+        'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAADgAAAAeCAYAAAB5c901AAAABmJLR0QA/wD/AP+gvaeTAAAEBklEQVRYhe2WTUxcVRiG3+/cOz/g/IGRMtPSH2zRiIowwCBJ7ZBIiImNC1PThTXBNJKmtWtNXODSuBO1gFGqiT+pqZrgD7Y1ZUGFDjPQmLCoErQ1wFBnhjIzBe6duedzUVHShKjhXmYWfbfn5H3uk5NzvksoUBr6Y88R84Bd0atGj7amrOIIq4r/LZ659BcAkrq0v2glp2CCw91teQb1gnHi0JkzilWcggkCAIH7AWz7NbXnaasYBRWMdTUmCPwpg05axSioIABAogeEtqb+SK0V9QUXjB5rmgRjxGDlZSv6Cy4IACD0EPhI89uX7zW7uigE3fOZLwEkDbvSaXZ3UQhaOTKKQhD4Z2TMLFYfNLO3aARjXY0JBn0ChqmPTdEIAoBCRg8IbY2nxh82q7OoBMdfar4CxgiEeadIZhX91zzw/ojblXc+xCwrAAUMSmR0fWr6ZEsaAIJ90UMATis5Y2fkRCi5Wd6WCja8G9tPCj9jU2i3x66qRKC0ZuRzhnFdCjE4MTs4HMYBkfG7ZxjUM9EVfHOzTMv+4u9MU2/kCRJ49f6y0pqGgCfRUFma2FdektnmcgoCHrm5kg8FPPvmf8y0zvjdcUVAdsx9/d5Hm+VuyQmG3hrzGE7ls71lJd4XHvNfeLK6fM4mwGvrF3+7WfnBxHz7z6llPaeIw5Od9Ynw6WHHcGfb6mbZW/LI6KrSrJIIPl/n/6Fjb/nsejkAaNvtix8Nbj9nI3qU9HwLXgeZIQdskaAQ1OItUf/Yv9MdXwMu56Qtm5P2tT0HdnkWfCW2BUFKKOiPmXZ1tmZMCJS57GpWCIUB4JfkcsXAZPz42akbz67fVmoTWQA+M9GqmWUbhfOcTGv5sm+vJsPxW1pjVjeqnaoyFw74Pl+/L6sbHganYvMZ3qjr/8ZSwfDARWda87QLIdvTK7maifl04MGKeyItVd6zzQH39Pq9Q9OpwJKWryDiUSAszfoG8wW7WQT9sVYCH8nodJiIbVKKIQKPTadW1VCVb6y+0n1d4vb9kAC+n05t//BKvCNnICIcMoJuMk3w7zFR+86Uy2FfrVdYOgwINzGrALwMEsRcxkQKEXsA2IjZxUROMEoAlDLIQcwuEGwAqgCUg3AOjI8BfBXralwO9kVDBLyyw+vcscvjuFbpsS8KEryQ1X3XFlf2/J7WFvKENyZmBy+hu9s8wWBv9DUibmfQ4wBsAAwAaQA5AFkAqwBWwFhmIo3A2b/WlggsmWgREhLAEoAcgRM624d+OlZ3405Y3anxZkWIp+yCa1wO1QkQbmmGpkljRkh8F134ZtRMuduCfdEYCOelFOe9jqVLZs2fjRLsi5YapNRA5u9jg0ghSmrsvDp1vDZrJfdu7qZI8yfio49mmBhiyAAAAABJRU5ErkJggg==',
+      'extent': [
+        731501.5247058513, 5862982.857784151, 731716.3713230825,
+        5863099.32407374,
+      ],
+    },
+  ]);
 
+  MVTEncoder.useImmediateAPI = true;
   const results2 = await encoder.encodeMVTLayer(mvtLayer, 20, printExtent);
-  expect(results2).toStrictEqual([{
-    "baseURL": "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABwAAAAPCAYAAAD3T6+hAAAABmJLR0QA/wD/AP+gvaeTAAABQklEQVQ4jc3UQSsEYRzH8e9/Zmrbjdok7lyUktZIeyDegNtuSk4Ok/AGnJSj4kBqd8hRjYu8ArXZC8OF23Lg4rC1iNYyM38n5bAHuzH5np/n9zk89QhtlvM887bWV1Fk58IZWf/pPaNd8DCfDxGKgi7mPM/8cxAAxQV6bh77p2MBfceuKnIgqsuxgABGFG0CkxnXH4oFPF8YvRK0JKEuxQICoGwhzGZ3y12xgB0PL0dAtREm5mMBT1anAmDNIEr/xl7TMq4/bhfOfvRu37NaOTy8f5k2G+EcgkOkAyriAdutbAhAdqOcrCeTvaYRmmpIWiK1DNHOSCUBpICUIhOCzgBPCHsoru/Yd61gAJIp+KeCjgHNvqdnIARqQEVEi6py7Dv2R6vQV5aIlgyiFQK5DxLmW9Cw6lG3+XqdH3xvd/Rf9QnF6WwWOrM0HwAAAABJRU5ErkJggg==",
-    "extent": [731501.5247058513, 5862982.857784151, 731716.3713230825, 5863099.32407374],
-  }]);
+  expect(results2).toStrictEqual([
+    {
+      'baseURL':
+        'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABwAAAAPCAYAAAD3T6+hAAAABmJLR0QA/wD/AP+gvaeTAAACoElEQVQ4jb2TS0hUURjH/985984dZ3LuVXyng9k7wUdOWgSKhT02UpSzrU25kBaBEbRq0a6oXaTRUooJgllGi5TBonSssKmBsgeamY466jjO495zWoQg0cAk1tl+3/f7cc75f4R1ng6fj3+ar/ooQbdHOhuuZzvH1it86PVaIPQSZFeHz8f/uRAAIHEXQNFYdGv7fxEGOz0RCbpPUl7Idob+VlLVM6wbgvaDoYGkcEkhGHHWbZFsen2+cWhDhbU9w0cUQrfK2I48jc/ZFZZYSFmupaTYJqT4DOBksNMT3hBhY2/wKCAv7ypwytN7Cp/Xlm6aYYA0BVjf6FRb4OvCsfl48oHJ+LWRcw3vM3GySlfdrVcGVHFpd6HTdaa+ZOBwVf5kvl1JuzTFNOxK2lPmGns7HWuJpWR5PGV9qTx0NjTx+J75J1ZWoeEOq15TWElNifNDs9v4oTLItXWHysyWSsOf71BXVI6aFQcrz8TKSiiJylw2Louc2tKq7MXEwnZ/ONK62tO+syBQrtteaio3CDY9E0vJSmgJRkQyJYXmD0dax+YTzQlLlBQ61CCAp6t9HCQIRJKlM2ZDAYADN5/lrOTkFHNmccnIICEVRjJXSNIAOCBEbTRp1ryZXGxz6/bl8lxt8KBbD7h1+9xaWCRhGom0+MbSViyjcG9PcDAF2cRhcQAg8et7hCQAWARgSc4W06bgsaQItW7RfZ5SPfI7yP9+1v19KVlhCutJEq7xjEIiGWAQV2DSuKnxhJlUVkQBXw55q1NrHpU8d4ZPhWfj3b3B6WarHgP7NuuzDIAA8OjdTGXf6PTxmVgqDIH+UFd1xhtmvYfVV0M2rXj5hKrwi3aFVeTnKFMOG49H42ZeNGkVpYXol5LdGDLqRuAlKxPnJ0rfEEKyDlHnAAAAAElFTkSuQmCC',
+      'extent': [
+        731501.5247058513, 5862982.857784151, 731716.3713230825,
+        5863099.32407374,
+      ],
+    },
+  ]);
+});
+
+test('encodeMVTLayer with render API', async () => {
+  const encoder = new MVTEncoder();
+
+  const mvtLayer = new VectorTileLayer({
+    source: new VectorTileSource({
+      format: new MVT(),
+      url: '/tiles/{z}/{x}/{y}.pbf',
+      maxZoom: 14,
+    }),
+  });
+
+  const printExtent = [
+    ...fromLonLat([6.57119, 46.51325]),
+    ...fromLonLat([6.57312, 46.51397]),
+  ] as Extent;
+
+  MVTEncoder.useImmediateAPI = false;
+  const results = await encoder.encodeMVTLayer(mvtLayer, 10, printExtent);
+  expect(results).toStrictEqual([
+    {
+      'baseURL':
+        'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAADgAAAAeCAYAAAB5c901AAAABmJLR0QA/wD/AP+gvaeTAAADlklEQVRYhe2XS2xUZRTHf+feeVX7sBgo1rYJjSGaYgztzFC6ahfoRuODAD5CDMa0QdAEN0YgiIkribqoje0kptVESaoUY1wYWNgFz+kdMZoGIohNLdBiZ0gf1mEe33EhSjWoNb3zWPS/u+ee/P/3l/PlO7lCgdQYiW0W1V6fnao9+XxLIlc5Vq6M/0vll6cHgHjK+J7LZU7BAAf3t2UU6UbZuam/385VTsEAAQSNAFU/JlY9nKuMggLGOoKTgh5U5KVcZRQUEABDJ0JbKBJtyIV9wQGd7aEzKMeyar+YC/+CAwIgdAq6Nfzu6Tvdti4KwLIrM4eBeNZnb3PbuygAc7kyigIQbq6Mi9fqH3HTt2gAYx3BSUU+RnH1sikaQABbsp0IbcH3hta45VlUgEPt4W9QjmG5N0Vxy2ihWvv+19VW2mwE7r1ROofwaawjeAWgqcfZBPTZ6WxddOe6+GLz8jrBxp7YbjtjRgJee099ZSC0alkgHPDae0QYaYo4r8LNlZHxelz5y/C4YbIQhSLOXkF3b25Y/sGuljrHAgUwIO+cGA32D/+8LxRx7MH24BuNPbFOC/MQcGCxuXk5oqGuaK16rQtPr6nq27W+JnarnrdPjQUPfjfxrKTNPUMvhMZa+wb9g9vakovNzssRNR7r8RKPlfgnOICXm2ucEo+VMLb1GCLqBhzkCVDQ1VWlvrH5tbm08c6mjW9+bcXt/ksqstrN7PxMEEt13vP5+NyK3jPjOw4NX934906Rv7QuWnm5ZET1+4nZ1JbPzyVaR6bm1s2msvUBj325tfqOT+b3TfySqcFw3s3snAK29n4VmL5evgFLH0xmzPIjF+OPhu8uP9VcW3EoXF12YX7vgeOjoWQmW+mxM4fd/Ab3Afer1XRXrEXQrTMpeVJEvShfINaH0UszW2rKAyNP3V/1wx/taYO8deKn8MDZyWdEee10e/PYv9n/X/25Jhq6hkv9vuRaW40/i1Umqh6gQhFLVCtVxBbRcsArqqUqEkApAW5TxC+qpQheoBZYhnAE5SPgs1hHcA6gqdt5BZHXAx6ZWlnmGwUYn0nVJTNaIZh9TkfoTTfhAKSp29krohsUWQ94gSwwDaSBWSAJ/IoypyLXBZ298W5KUKMi1zAYYApICzqZUt+X325/4OqtAkNd0ZXGaz2hKvcBiOhZK20GhnaEx92G+x2wx4khHDXGOlrhnzru1v5Z0pKWtCD9BlnCWOFgJziOAAAAAElFTkSuQmCC',
+      'extent': [
+        731501.5247058513, 5862982.857784151, 731716.3713230825,
+        5863099.32407374,
+      ],
+    },
+  ]);
+
+  MVTEncoder.useImmediateAPI = false;
+  const results2 = await encoder.encodeMVTLayer(mvtLayer, 20, printExtent);
+  expect(results2).toStrictEqual([
+    {
+      'baseURL':
+        'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABwAAAAPCAYAAAD3T6+hAAAABmJLR0QA/wD/AP+gvaeTAAACU0lEQVQ4jb2UT0jTYRjHv8/7+/3cnxTtj05kjkoawTqUNk2DIjp0iSjCHepsO0iEdKjWH+0SlNStSCvoEsGipFuedrAJ2rZDEAlOQZ2YINO1ZD+33+99OqxgiG3TqOf2Pu/zfD7vC8/7ErYYncGgMr28N86gJzF/S3+5fWKrwjc+nwnCIIG7O4NB5Z8LAQCMZwDqplaazvwXYdR/eIlBr4n5crk9tFnJoRexBpGT5wHs/5VKgXCdBR2MdbV8LtWvbkbWPBANCEP2WTQl2VCpzTKBFtK5xjXTBEs8B9BailH2Db2DkVsEBHye2lc9Ha6IABgAJEB9oenO4fjySRDfG+/y3vxroffxeCNrIn7hgONlT7szun5fSogrw5P9Y4mUDTne86m7de5PrLKGRqrinE0VyY1kACAE5KmmHUNWVdGlIs4WY5UlJLDbUVmRKMyNJVL73k8snfi9Pu3e+bFum2WCidzFWGUNjYRgBpDM5OwjM6m2qWX9mG7K+lq7FgUQKqwkYi4pbH80asvYbA5FmAoLqiHJqiCukkwWAHYCahZ/ZD0D0YX7qkDGWWUJH3VVj7iqrclC2OKq4YTEZFFh80A0nAW3KTAVACCZP6BkAoDvAEwGp3WDLZmcEbp9fPdbTQhzPag/POvVDXO7qhhDRYVEPCIgAzBozrAourGmZuQuZfWLz5MtLPQORm58iK/02rX5masdjeOayD+LnAQ9HJ1rffd16SIxescuHUlsrMrHpn6alqeRayC6a1UpVV9VMQsA39JZl25wNUHeifi9D0oxfgIpY+NN0lICtAAAAABJRU5ErkJggg==',
+      'extent': [
+        731501.5247058513, 5862982.857784151, 731716.3713230825,
+        5863099.32407374,
+      ],
+    },
+  ]);
 });

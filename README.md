@@ -5,6 +5,14 @@ This project provides low level functionnalities for rendering OpenLayers layers
 Implemented:
 - Mapbox Vector Tiles (MVT)
 
+You can use plain OpenLayers style functions or a MapBox style processed by the `ol-mapbox-style` library.
+Rendering can use the immediate API or the internal render API of OpenLayers. Set the `MVTEncoder.useImmediateAPI` boolean.
+
+## Using
+
+Currently you should depend on the typescript sources.
+In the future an EcmaScript version will be distributed.
+
 ## Example
 
 ![image](https://user-images.githubusercontent.com/7294662/124280423-f6d1b980-db48-11eb-9848-beb24d3bf22c.png)

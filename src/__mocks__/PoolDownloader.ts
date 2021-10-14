@@ -1,4 +1,5 @@
 import fetch from 'node-fetch';
+// @ts-ignore
 global.fetch = fetch;
 import fs from 'fs';
 
@@ -15,13 +16,16 @@ export class PoolDownloader {
   fetch(input: RequestInfo, init?: RequestInit): Promise<Response> {
     if (typeof input === 'string' && input.startsWith('/tiles/')) {
       const fileName = `public${input}`;
-      return fs.promises.readFile(fileName).then(b => ({
-        arrayBuffer() {
-          return b
-        }
-      } as unknown as Response
-      ));
+      return fs.promises.readFile(fileName).then(
+        (b) =>
+          ({
+            arrayBuffer() {
+              return b;
+            },
+          } as unknown as Response)
+      );
     }
+    // @ts-ignore
     return this.fetcher(input, init);
   }
 }

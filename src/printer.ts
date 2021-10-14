@@ -1,5 +1,4 @@
-export const printerIcon =
-`<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+export const printerIcon = `<?xml version="1.0" encoding="UTF-8" standalone="no"?>
 <!-- Created with Inkscape (http://www.inkscape.org/) -->
 <svg
     xmlns:inkscape="http://www.inkscape.org/namespaces/inkscape"
@@ -19,7 +18,6 @@ export const printerIcon =
     y="0"
     x="0"
     inkscape:version="0.42"
-    sodipodi:docbase="C:\Documents and Settings\Jarno\Omat tiedostot\vanhasta\opencliparts\omat\symbols"
   >
   <sodipodi:namedview
       id="base"
