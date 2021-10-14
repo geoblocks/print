@@ -8,7 +8,7 @@ import {
   getWidth as getExtentWidth,
 } from 'ol/extent.js';
 import {MVT} from 'ol/format.js';
-import {PoolDownloader} from './PoolDownloader';
+
 import {Size} from 'ol/size.js';
 import {Transform} from 'ol/transform.js';
 import {asOpacity} from './canvasUtils';
@@ -17,13 +17,26 @@ import {
   listTilesCoveringExtentAtResolution,
 } from './encodeutils';
 import {renderFeature} from 'ol/renderer/vector.js';
-import {toContext} from 'ol/render';
+import {toContext} from 'ol/render.js';
 import {transform2D} from 'ol/geom/flat/transform.js';
 
 import CanvasBuilderGroup from 'ol/render/canvas/BuilderGroup.js';
 import CanvasExecutorGroup from 'ol/render/canvas/ExecutorGroup.js';
 import RBush from 'rbush';
 import TileGrid from 'ol/tilegrid/TileGrid';
+
+/**
+ * Simple proxy to the fetch function for now.
+ * Can be updated later to limit the number of concurrent requests.
+ * Can be made to work on stub for testing.
+ */
+export class PoolDownloader {
+  fetch(input: RequestInfo, init?: RequestInit): Promise<Response> {
+    return typeof fetch !== 'undefined'
+      ? fetch(input, init)
+      : Promise.reject('no Fetch');
+  }
+}
 
 const pool = new PoolDownloader();
 const mvtFormat = new MVT();

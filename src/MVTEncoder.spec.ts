@@ -1,13 +1,14 @@
 /* global jest, test, expect */
 
-import MVTEncoder from './MVTEncoder';
+import MVTEncoder, {PoolDownloader} from './MVTEncoder';
 import VectorTileLayer from 'ol/layer/VectorTile.js';
 import VectorTileSource from 'ol/source/VectorTile.js';
 import {Extent} from 'ol/extent';
 import {MVT} from 'ol/format.js';
 import {fromLonLat} from 'ol/proj.js';
+import {mockFetch} from './__mocks__/PoolDownloader';
 
-jest.mock('./PoolDownloader');
+PoolDownloader.prototype.fetch = mockFetch;
 
 test('encodeMVTLayer with immediate API', async () => {
   const encoder = new MVTEncoder();

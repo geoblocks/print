@@ -3,7 +3,7 @@
  * Can be updated later to limit the number of concurrent requests.
  * Can be made to work on stub for testing.
  */
-export class PoolDownloader {
+export class PoolDownloaderr {
   private fetcher: typeof fetch;
 
   constructor() {
@@ -16,4 +16,8 @@ export class PoolDownloader {
   fetch(input: RequestInfo, init?: RequestInit): Promise<Response> {
     return this.fetcher(input, init);
   }
+}
+
+export function toto(): void {
+  console.log('coucou');
 }

@@ -1,2 +1,1 @@
-import MVTEncoder from './MVTEncoder';
-export default MVTEncoder;
+export {default as MVTEncoder} from './MVTEncoder';
