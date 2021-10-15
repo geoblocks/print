@@ -30,7 +30,7 @@ import {printerIcon} from '../printer';
 import {unsafeHTML} from 'lit/directives/unsafe-html.js';
 
 const defaults = {
-  demo: 'mapbox2',
+  demo: 'simple',
   declutter: true,
   immediateApi: false,
 };
@@ -49,9 +49,6 @@ export class DemoApp extends LitElement {
         display: inline-block;
       }
       #print {
-        position: absolute;
-        top: 10em;
-        left: 2.5em;
         width: 30px;
         height: 30px;
       }
@@ -220,7 +217,7 @@ export class DemoApp extends LitElement {
               offsetY: 40,
             }),
             image: new Icon({
-              src: `/beach.svg`,
+              src: `${document.baseURI}/beach.svg`,
               opacity: 0.5,
               scale: 0.05,
             }),
@@ -234,7 +231,7 @@ export class DemoApp extends LitElement {
       },
       source: new VectorTileSource({
         format: new MVT(),
-        url: '/tiles/{z}/{x}/{y}.pbf',
+        url: document.baseURI + 'tiles/{z}/{x}/{y}.pbf',
         maxZoom: 14,
         // extent: trackExtent,
       }),
@@ -332,20 +329,30 @@ export class DemoApp extends LitElement {
     }
   }
 
+  formatExtent(e: Extent) {
+    const c0 = [e[0], e[1]];
+    const c1 = [e[2], e[3]];
+    const p1 = toLonLat(c0, 'EPSG:3857')
+      .map((v) => v.toFixed(3))
+      .join(', ');
+    const p2 = toLonLat(c1, 'EPSG:3857')
+      .map((v) => v.toFixed(3))
+      .join(', ');
+    return `[${p1}, ${p2}]`;
+  }
+
   render(): TemplateResult {
     let img: TemplateResult | '' = '';
     let extent: TemplateResult | '' = '';
     if (this.result0) {
       const e = this.result0.extent;
-      const c0 = [e[0], e[1]];
-      const c1 = [e[2], e[3]];
       img = html`<img id="side" src="${this.result0.baseURL}" />`;
-      extent = html`<div>
-        ${JSON.stringify(toLonLat(c0, 'EPSG:3857'))}
-        ${JSON.stringify(toLonLat(c1, 'EPSG:3857'))}
-      </div>`;
+      extent = html`<span>${this.formatExtent(e)}</span>`;
     }
     return html`
+      <button id="print" @click=${this.print}>
+        ${unsafeHTML(printerIcon)}
+      </button>
       <label for="demo-select">Choose a demo:</label>
       <select
         name="demos"
@@ -377,15 +384,14 @@ export class DemoApp extends LitElement {
           }}
         />immediate API
       </label>
-      <div>${extent || 'Move around and click the print button...'}</div>
       <div>zoom: ${this.zoom.toFixed(1)}</div>
+      <div>
+        printed extent: ${extent || 'Move around and click the print button...'}
+      </div>
       <div>
         <div id="map"></div>
         ${img}
       </div>
-      <button id="print" @click=${this.print}>
-        ${unsafeHTML(printerIcon)}
-      </button>
     `;
   }
 }

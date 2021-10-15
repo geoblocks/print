@@ -5,3 +5,4 @@ types
 *.local
 /coverage
 /geoblocks-print-*.tgz
+/ghpages
