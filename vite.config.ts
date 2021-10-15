@@ -3,6 +3,7 @@ import {defineConfig} from 'vite';
 // https://vitejs.dev/config/
 export default defineConfig({
   build: {
+    target: 'esnext',
     sourcemap: true,
     lib: {
       entry: 'src/main.ts',
@@ -11,7 +12,7 @@ export default defineConfig({
     rollupOptions: {
       external: /^lit|ol/,
       input: {
-        demo: 'src/main.ts',
+        lib: 'src/main.ts',
       },
     },
   },

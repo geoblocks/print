@@ -21,6 +21,8 @@
     "start": "vite",
     "dev": "vite",
     "build": "tsc && vite build",
+    "build-ghpages": "tsc && vite -c vite.config.ghpages.ts build",
+    "preview": "vite -c vite.config.ghpages.ts preview",
     "test": "jest"
   },
   "peerDependencies": {

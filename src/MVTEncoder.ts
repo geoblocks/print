@@ -135,8 +135,10 @@ export default class MVTEncoder {
       );
     }
 
-    function listener() {
-      console.log('FIXME: something happened, we should regenerate the image');
+    function resourceLoadedListener() {
+      console.log(
+        'FIXME: some resource is now available, we should regenerate the image'
+      );
     }
 
     /**
@@ -162,7 +164,7 @@ export default class MVTEncoder {
               feature,
               style,
               tolerance,
-              listener,
+              resourceLoadedListener,
               undefined,
               declutterBuilderGroup
             ) || loading;
@@ -176,7 +178,9 @@ export default class MVTEncoder {
       loading = localRenderFeature(f) || loading;
     });
 
-    console.log('FIXME: some styles are still loading');
+    if (loading) {
+      console.log('FIXME: some styles are still loading');
+    }
 
     const sourceHasOverlaps = true; // we don't care about performance
     const executorGroupInstructions = builderGroup.finish();

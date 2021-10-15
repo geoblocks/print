@@ -25,3 +25,8 @@ jobs:
       - name: Build
         run: npm run build
 
+      - name: Deploy gh-pages
+        run: ./scripts/deploy-gh-pages.sh
+        with:
+          branch: master
+

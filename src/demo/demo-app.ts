@@ -79,6 +79,7 @@ export class DemoApp extends LitElement {
   @state()
   private zoom = -1;
 
+  @state()
   private currentDemo = defaults.demo;
 
   @state()
@@ -349,7 +350,7 @@ export class DemoApp extends LitElement {
       <select
         name="demos"
         id="demo-select"
-        value="mapbox"
+        .value="${this.currentDemo}"
         @change=${(evt) => this.updateDemo(evt.target.value)}
       >
         <option value="simple">Basic style function</option>
@@ -357,17 +358,24 @@ export class DemoApp extends LitElement {
         <option value="mapbox2">OL-Mapbox-style2</option>
       </select>
       <label>
-        <input type="checkbox" ?checked=${this.shouldDeclutter}
-         @change=${(evt) => {
-           this.shouldDeclutter = evt.target.checked;
-           this.updateDemo(this.currentDemo);
-         }}>declutter</input>
+        <input
+          type="checkbox"
+          ?checked=${this.shouldDeclutter}
+          @change=${(evt) => {
+            this.shouldDeclutter = evt.target.checked;
+            this.updateDemo(this.currentDemo);
+          }}
+        />
+        declutter
       </label>
       <label>
-        <input type="checkbox" ?checked=${this.useImmediateApi}
-         @change=${(evt) => {
-           this.useImmediateApi = evt.target.checked;
-         }}>immediate API</input>
+        <input
+          type="checkbox"
+          ?checked=${this.useImmediateApi}
+          @change=${(evt) => {
+            this.useImmediateApi = evt.target.checked;
+          }}
+        />immediate API
       </label>
       <div>${extent || 'Move around and click the print button...'}</div>
       <div>zoom: ${this.zoom.toFixed(1)}</div>
