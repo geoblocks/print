@@ -10,6 +10,10 @@ import {mockFetch} from './__mocks__/PoolDownloader';
 
 PoolDownloader.prototype.fetch = mockFetch;
 
+// Resolutions are not round numbers
+const r10 = 9.554628535647032;
+const r20 = 19.109257071294063;
+
 test('encodeMVTLayer with immediate API', async () => {
   const encoder = new MVTEncoder();
 
@@ -27,7 +31,13 @@ test('encodeMVTLayer with immediate API', async () => {
   ] as Extent;
 
   MVTEncoder.useImmediateAPI = true;
-  const results = await encoder.encodeMVTLayer(mvtLayer, 10, printExtent);
+  const results = await encoder.encodeMVTLayer({
+    layer: mvtLayer,
+    canvasSize: [56, 30],
+    styleResolution: r10,
+    tileResolution: r10,
+    printExtent,
+  });
   expect(results).toStrictEqual([
     {
       'baseURL':
@@ -40,7 +50,13 @@ test('encodeMVTLayer with immediate API', async () => {
   ]);
 
   MVTEncoder.useImmediateAPI = true;
-  const results2 = await encoder.encodeMVTLayer(mvtLayer, 20, printExtent);
+  const results2 = await encoder.encodeMVTLayer({
+    layer: mvtLayer,
+    canvasSize: [28, 15],
+    styleResolution: r20,
+    tileResolution: r20,
+    printExtent,
+  });
   expect(results2).toStrictEqual([
     {
       'baseURL':
@@ -70,7 +86,13 @@ test('encodeMVTLayer with render API', async () => {
   ] as Extent;
 
   MVTEncoder.useImmediateAPI = false;
-  const results = await encoder.encodeMVTLayer(mvtLayer, 10, printExtent);
+  const results = await encoder.encodeMVTLayer({
+    layer: mvtLayer,
+    canvasSize: [56, 30],
+    styleResolution: r10,
+    tileResolution: r10,
+    printExtent,
+  });
   expect(results).toStrictEqual([
     {
       'baseURL':
@@ -83,7 +105,13 @@ test('encodeMVTLayer with render API', async () => {
   ]);
 
   MVTEncoder.useImmediateAPI = false;
-  const results2 = await encoder.encodeMVTLayer(mvtLayer, 20, printExtent);
+  const results2 = await encoder.encodeMVTLayer({
+    layer: mvtLayer,
+    canvasSize: [28, 15],
+    styleResolution: r20,
+    tileResolution: r20,
+    printExtent,
+  });
   expect(results2).toStrictEqual([
     {
       'baseURL':

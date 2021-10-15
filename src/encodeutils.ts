@@ -29,7 +29,7 @@ export function createWorldToVectorContextTransform(
   const r1 = eWidth / eHeight;
   const r2 = width / height;
   console.assert(
-    Math.abs(r1 / r2 - 1) < 0.01,
+    Math.abs(r1 / r2 - 1) < 0.02,
     `extent and canvas don't have same ratio: ${r1}, ${r2}`
   );
   // mind that transforms are created in reverse order
@@ -47,7 +47,7 @@ export function createWorldToVectorContextTransform(
   return tr;
 }
 
-interface CoordExtent {
+export interface CoordExtent {
   coord: import('ol/tilecoord.js').TileCoord;
   extent: import('ol/extent.js').Extent;
 }

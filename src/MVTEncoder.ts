@@ -2,6 +2,8 @@ import CanvasImmediateRenderer from 'ol/render/canvas/Immediate.js';
 import RenderFeature from 'ol/render/Feature.js';
 import Style, {StyleFunction} from 'ol/style/Style.js';
 import VectorTileLayer from 'ol/layer/VectorTile.js';
+import VectorTileSource from 'ol/source/VectorTile.js';
+
 import {
   Extent,
   getHeight as getExtentHeight,
@@ -9,13 +11,13 @@ import {
 } from 'ol/extent.js';
 import {MVT} from 'ol/format.js';
 
-import {Size} from 'ol/size.js';
-import {Transform} from 'ol/transform.js';
-import {asOpacity} from './canvasUtils';
 import {
+  CoordExtent,
   createWorldToVectorContextTransform,
   listTilesCoveringExtentAtResolution,
 } from './encodeutils';
+import {Transform} from 'ol/transform.js';
+import {asOpacity} from './canvasUtils';
 import {renderFeature} from 'ol/renderer/vector.js';
 import {toContext} from 'ol/render.js';
 import {transform2D} from 'ol/geom/flat/transform.js';
@@ -43,32 +45,28 @@ const mvtFormat = new MVT();
 
 export interface PrintEncodeOptions {
   /**
-   * The resolution of the output canvas (OpenLayers resolution).
-   * You should provide this value if you have a requirement on the output size of the canvas.
+   * The layer to print.
    */
-  canvasResolution?: number;
+  layer: VectorTileLayer;
+  /**
+   * The printed extent in OpenLayers coordinates system.
+   */
+  printExtent: Extent;
   /**
    * The resolution to use for retrieving the PBF files (OpenLayers resolution).
    * This will directly impact the quantity of details.
    */
-  tileResolution?: number;
+  tileResolution: number;
   /**
    * The resolution to use for styling the features (OpenLayers resolution).
    * This is the one passed to the style function.
    */
-  styleResolution?: number;
+  styleResolution: number;
   /**
-   * The resolution of the view (OpenLayers resolution, typically the view resolution)
+   * The virtual size of the canvas to print to. This must have the same ratio has the print extent.
+   * This is in real pixels.
    */
-  monitorResolution?: number;
-  /**
-   * The resolution of the monitor. Defaults to 96 DPI.
-   */
-  monitorDPI?: number;
-  /**
-   * The resolution of the printer. Defaults to 254 DPI.
-   */
-  paperDPI?: number;
+  canvasSize: [number, number];
   /**
    * PNG or JPEG
    */
@@ -89,6 +87,7 @@ interface ToDraw {
 
 interface RenderTile {
   printExtent: Extent;
+  canvasSize: [number, number];
 }
 
 interface _FeatureExtent {
@@ -322,33 +321,6 @@ export default class MVTEncoder {
     }
   }
 
-  /**
-   * Adjust size of the canvas and wrap it into the OL immediate API.
-   * @param canvas The canvas to render to
-   * @param targetExtent The extent for this canvas, in world coordinates
-   * @param resolution The resolution for this canvas (will influence the size of the canvas)
-   */
-  createRenderContext(
-    canvas: HTMLCanvasElement,
-    targetExtent: Extent,
-    resolution: number
-  ): CanvasImmediateRenderer {
-    const width = getExtentWidth(targetExtent) / resolution;
-    const height = getExtentHeight(targetExtent) / resolution;
-    const size: Size = [width, height];
-    const ctx = canvas.getContext('2d');
-    if (!ctx) {
-      throw new Error(
-        `Could not get the context ${canvas.width}x${canvas.height}, expected ${width}x${height})`
-      );
-    }
-    const vectorContext = toContext(ctx, {
-      size,
-      pixelRatio: 1,
-    });
-    return vectorContext;
-  }
-
   snapTileResolution(tileGrid: TileGrid, targetResolution: number): number {
     const resolutions = tileGrid.getResolutions();
     let resolution = resolutions[resolutions.length - 2]; // the last one is exclusive?
@@ -363,34 +335,35 @@ export default class MVTEncoder {
     return resolution;
   }
 
-  /**
-   *
-   * @param layer The VectorTileLayer to rasterize
-   * @param defaultResolution The resolution to fallback when specific resolution is not available in options
-   * @param printExtent The extent that should be printed (in map coordinates)
-   * @param options Extra options
-   */
-  async encodeMVTLayer(
-    layer: VectorTileLayer,
-    defaultResolution: number,
-    printExtent: Extent,
-    options: PrintEncodeOptions = {}
-  ): Promise<PrintResult[]> {
-    const outputFormat = options.outputFormat || 'png';
-    const renderBuffer = layer.getRenderBuffer() ?? 100;
-    const source = layer.getSource();
-    const projection = source.getProjection();
-    const tileGrid = source.getTileGrid();
-    const monitorResolution = options.monitorResolution || defaultResolution;
-    const targetResolution = options.tileResolution || monitorResolution;
-    const tileResolution = this.snapTileResolution(tileGrid, targetResolution);
-    const mvtTiles = listTilesCoveringExtentAtResolution(
-      printExtent,
-      tileResolution,
-      tileGrid
-    );
+  assertCanvasSize(printExtent, canvasSize) {
+    const eRatio = getExtentWidth(printExtent) / getExtentHeight(printExtent);
+    const cRatio = canvasSize[0] / canvasSize[1];
+    if (Math.abs(eRatio / cRatio - 1) > 0.02) {
+      const msg = `The print extent ratio ${eRatio} and the canvas ratio ${cRatio} mismatch: ${
+        Math.abs(eRatio / cRatio - 1) * 100
+      } %`;
+      throw new Error(msg);
+    }
+  }
 
+  // avoid polyfilling
+  async allFullfilled<MyType>(promises: Promise<MyType>[]) {
+    const settled: MyType[] = [];
+    for (const p of promises) {
+      await p.then(
+        (s: any) => settled.push(s),
+        () => {
+          // empty
+        }
+      );
+    }
+    return settled;
+  }
+
+  async fetchFeatures(mvtTiles: CoordExtent[], source: VectorTileSource) {
     const urlFunction = source.getTileUrlFunction();
+    const projection = source.getProjection();
+
     const featuresPromises = mvtTiles.map((t) => {
       // pixelratio and projection are not used
       const url = urlFunction(t.coord, 1, projection);
@@ -412,26 +385,51 @@ export default class MVTEncoder {
           } as _FeatureExtent;
         });
     });
+    // keep only the fullfiled ones
+    return this.allFullfilled(featuresPromises);
+  }
 
-    const featuresAndExtents = (await Promise.allSettled(featuresPromises))
-      .filter((r) => r.status === 'fulfilled')
-      .map((r) => (r as PromiseFulfilledResult<_FeatureExtent>).value);
+  /**
+   * @param options
+   */
+  async encodeMVTLayer(options: PrintEncodeOptions): Promise<PrintResult[]> {
+    const layer = options.layer;
+    const outputFormat = options.outputFormat || 'png';
+    const renderBuffer = layer.getRenderBuffer() ?? 100;
+    const source = layer.getSource();
+    const tileGrid = source.getTileGrid();
+    const tileResolution = this.snapTileResolution(
+      tileGrid,
+      options.tileResolution
+    );
+    if (tileResolution !== options.tileResolution) {
+      console.warn(
+        `snapped and tile resolution mismatch: ${tileResolution} != ${options.tileResolution}`
+      );
+      options.tileResolution = tileResolution;
+    }
+    const printExtent = options.printExtent;
+    const mvtTiles = listTilesCoveringExtentAtResolution(
+      printExtent,
+      tileResolution,
+      tileGrid
+    );
+
+    const featuresAndExtents = await this.fetchFeatures(mvtTiles, source);
 
     // TODO:
     // decide on a reasonable number of paving tiles for the rendering
     // this depends on the size of the tiles in pixels.
     // This will be necessary when working with A0 or such big outputs.
+    const canvasSize = options.canvasSize;
+    this.assertCanvasSize(printExtent, canvasSize);
     const renderTiles: RenderTile[] = [
       {
         printExtent, // print extent
+        canvasSize, // the size in pixel for the canvas
       },
     ];
 
-    // By default we want 254 DPI on paper VS 96 DPI on the display
-    const paperDPI = options.paperDPI || 254;
-    const monitorDPI = options.monitorDPI || 96;
-    const rtResolution =
-      options.canvasResolution || (monitorDPI / paperDPI) * monitorResolution;
     const styleResolution = options.styleResolution || tileResolution;
     const layerStyleFunction = layer.getStyleFunction()!; // there is always a default one
     const layerOpacity = layer.get('opacity');
@@ -443,7 +441,7 @@ export default class MVTEncoder {
       this.renderTile(
         featuresAndExtents,
         rt.printExtent,
-        rtResolution,
+        rt.canvasSize,
         styleResolution,
         layerStyleFunction,
         layerOpacity,
@@ -458,7 +456,7 @@ export default class MVTEncoder {
   renderTile(
     featuresExtents: _FeatureExtent[],
     rtExtent: Extent,
-    rtResolution: number,
+    canvasSize: [number, number],
     styleResolution: number,
     layerStyleFunction: StyleFunction,
     layerOpacity: number,
@@ -467,12 +465,15 @@ export default class MVTEncoder {
     outputFormat?: string
   ): PrintResult {
     const canvas = document.createElement('canvas');
-    const vectorContext = this.createRenderContext(
-      canvas,
-      rtExtent,
-      rtResolution
+    const ctx = canvas.getContext('2d')!;
+    console.assert(
+      ctx,
+      `Could not get the context ${canvas.width}x${canvas.height}`
     );
-    const ctx = canvas.getContext('2d');
+    const vectorContext = toContext(ctx, {
+      size: canvasSize,
+      pixelRatio: 1,
+    });
 
     featuresExtents.forEach((ft) => {
       const transform = createWorldToVectorContextTransform(
