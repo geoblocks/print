@@ -26,7 +26,5 @@ jobs:
         run: npm run build
 
       - name: Deploy gh-pages
-        run: ./scripts/deploy-gh-pages.sh
-        with:
-          branch: master
-
+        run: git config --global user.email "support+actions@github.com>" && git config --global user.name "github-actions-bot" && ./scripts/deploy-gh-pages.sh
+        if: ${{ github.ref == 'refs/heads/master' }}
