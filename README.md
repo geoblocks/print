@@ -8,6 +8,10 @@ Implemented:
 You can use plain OpenLayers style functions or a MapBox style processed by the `ol-mapbox-style` library.
 Rendering can use the immediate API or the internal render API of OpenLayers. Set the `MVTEncoder.useImmediateAPI` boolean.
 
+## Demo
+
+https://geoblocks.github.io/print
+
 ## Using
 
 Currently you should depend on the typescript sources.
