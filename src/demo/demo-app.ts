@@ -20,7 +20,7 @@ import stylefunction from 'ol-mapbox-style/dist/stylefunction.js';
 import {Extent} from 'ol/extent.js';
 import {LitElement, TemplateResult, css, html} from 'lit';
 import {PDF_POINTS_PER_METER} from '../constants';
-import {computePrintPosition, drawPaperDimensions} from '../postcompose';
+import {centerPrintExtent, drawPrintExtent} from '../postcompose';
 import {customElement, query, state} from 'lit/decorators.js';
 import {extentFromProjection} from 'ol/tilegrid.js';
 import {fromLonLat, toLonLat} from 'ol/proj.js';
@@ -150,8 +150,10 @@ export class DemoApp extends LitElement {
 
     this.map.on('postcompose', (evt) => {
       const res = evt.frameState!.viewState.resolution;
-      //const printResolution = 1 / PIXELS_PER_METER / this.printScale;
-      drawPaperDimensions(evt, this.getPrintDimensions(res));
+      drawPrintExtent(
+        evt,
+        this.getPrintExtentSizeForResolution(res, devicePixelRatio)
+      );
     });
     this.map.getView().on('change:resolution', () => {
       this.zoom = this.map?.getView().getZoom() || -1;
@@ -159,12 +161,19 @@ export class DemoApp extends LitElement {
     this.zoom = this.map?.getView().getZoom() || -1;
   }
 
-  getPrintDimensions(resolution: number): number[] {
-    return this.targetSizeInPdfPoints.map(
-      (side) =>
-        (side / PDF_POINTS_PER_METER / resolution / this.printScale) *
-        devicePixelRatio
-    );
+  /**
+   * @param resolution some resolution, typically the display resolution
+   * @param pixelRatio typically the device pixel ratio
+   * @return size
+   */
+  getPrintExtentSizeForResolution(
+    resolution: number,
+    pixelRatio: number
+  ): number[] {
+    return this.targetSizeInPdfPoints.map((side) => {
+      const metersOnTheMap = side / PDF_POINTS_PER_METER / this.printScale;
+      return (pixelRatio * metersOnTheMap) / resolution;
+    });
   }
 
   firstUpdated(): void {
@@ -177,11 +186,11 @@ export class DemoApp extends LitElement {
     const viewResolution = this.map!.getView().getResolution()!;
     const size = this.map!.getSize()!;
 
-    const pp = computePrintPosition(
-      this.getPrintDimensions(viewResolution),
-      size[0],
-      size[1]
+    const peSize = this.getPrintExtentSizeForResolution(
+      viewResolution,
+      window.devicePixelRatio
     );
+    const pp = centerPrintExtent(peSize, size[0], size[1]);
     const printExtent: Extent = [
       ...this.map!.getCoordinateFromPixel([pp[0], pp[3]]),
       ...this.map!.getCoordinateFromPixel([pp[2], pp[1]]), // top right
@@ -193,6 +202,11 @@ export class DemoApp extends LitElement {
       })
     );
     const options: PrintEncodeOptions = {
+      // This should be computed using canvasSizeFromDimensionsInPdfPoints
+      // Then we could compare with the ratio of the printExtent
+      // ...
+      // we could also directly pass the expected canvas dimensions here
+      // as it is the only needed information
       canvasResolution: 3, // FIXME: properly compute this number
     };
     const result = await encoder.encodeMVTLayer(

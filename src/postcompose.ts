@@ -2,7 +2,14 @@ import Map from 'ol/Map';
 import RenderEvent from 'ol/render/Event';
 import {Extent} from 'ol/extent';
 
-export function computePrintPosition(
+/**
+ * Center the print extent (in pixels) inside the viewport
+ * @param dimensions size in pixels of the print extent
+ * @param viewportWidth the width in pixels of the map displayed in the browser
+ * @param viewportHeight the height in pixels of the map displayed in the browser
+ * @return position of the centered print rectangle
+ */
+export function centerPrintExtent(
   dimensions: number[],
   viewportWidth: number,
   viewportHeight: number
@@ -10,13 +17,13 @@ export function computePrintPosition(
   const centerX = viewportWidth / 2;
   const centerY = viewportHeight / 2;
 
-  const [paperSizePixelWidth, paperSizePixelHeight] = dimensions;
-  const minX = centerX - paperSizePixelWidth / 2;
-  const minY = centerY - paperSizePixelHeight / 2;
-  return [minX, minY, minX + paperSizePixelWidth, minY + paperSizePixelHeight];
+  const [printWidthInPixels, printHeightInPixels] = dimensions;
+  const minX = centerX - printWidthInPixels / 2;
+  const minY = centerY - printHeightInPixels / 2;
+  return [minX, minY, minX + printWidthInPixels, minY + printHeightInPixels];
 }
 
-export function drawPaperDimensions(
+export function drawPrintExtent(
   event: RenderEvent,
   dimensions: number[]
 ): void {
@@ -31,6 +38,12 @@ export function drawPaperDimensions(
     (frameState.size[1] * frameState.pixelRatio).toFixed()
   );
 
+  const printPosition = centerPrintExtent(
+    dimensions,
+    viewportWidth,
+    viewportHeight
+  );
+
   for (let i = canvases.length - 1; i >= 0; i--) {
     // layer creates new canvas on high resolution devices
     const canvas = canvases.item(i)!;
@@ -38,12 +51,6 @@ export function drawPaperDimensions(
 
     if (canvas.width === viewportWidth && canvas.height === viewportHeight) {
       // checks for correct canvas
-      const printPosition = computePrintPosition(
-        dimensions,
-        viewportWidth,
-        viewportHeight
-      );
-
       context.beginPath();
 
       // outer rectangle
