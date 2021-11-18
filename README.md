@@ -1,6 +1,6 @@
 # Geoblocks print
 
-This project provides low level functionnalities for rendering OpenLayers layers to images of arbitrary resolution.
+This project provides low level functionalities for rendering OpenLayers layers to images of arbitrary resolution.
 
 Implemented:
 - Mapbox Vector Tiles (MVT)
