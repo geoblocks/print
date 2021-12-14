@@ -69,6 +69,10 @@ export interface PrintEncodeOptions {
    * The resolution of the printer. Defaults to 254 DPI.
    */
   paperDPI?: number;
+  /**
+   * PNG or JPEG
+   */
+  outputFormat?: string;
 }
 
 interface PrintResult {
@@ -372,6 +376,7 @@ export default class MVTEncoder {
     printExtent: Extent,
     options: PrintEncodeOptions = {}
   ): Promise<PrintResult[]> {
+    const outputFormat = options.outputFormat || 'png';
     const renderBuffer = layer.getRenderBuffer() ?? 100;
     const source = layer.getSource();
     const projection = source.getProjection();
@@ -443,7 +448,8 @@ export default class MVTEncoder {
         layerStyleFunction,
         layerOpacity,
         renderBuffer,
-        decluterTree
+        decluterTree,
+        outputFormat
       )
     );
     return encodedLayers;
@@ -457,7 +463,8 @@ export default class MVTEncoder {
     layerStyleFunction: StyleFunction,
     layerOpacity: number,
     renderBuffer: number,
-    decluterTree?: RBush<any>
+    decluterTree?: RBush<any>,
+    outputFormat?: string
   ): PrintResult {
     const canvas = document.createElement('canvas');
     const vectorContext = this.createRenderContext(
@@ -496,7 +503,7 @@ export default class MVTEncoder {
 
     const baseUrl = (
       layerOpacity === 1 ? canvas : asOpacity(canvas, layerOpacity)
-    ).toDataURL('PNG');
+    ).toDataURL(outputFormat);
     return {
       extent: rtExtent,
       baseURL: baseUrl,
