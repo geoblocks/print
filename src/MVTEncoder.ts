@@ -395,7 +395,7 @@ export default class MVTEncoder {
   async encodeMVTLayer(options: PrintEncodeOptions): Promise<PrintResult[]> {
     const layer = options.layer;
     const outputFormat = options.outputFormat || 'png';
-    const renderBuffer = layer.getRenderBuffer() ?? 100;
+    const renderBuffer = layer.getRenderBuffer() || 100;
     const source = layer.getSource();
     const tileGrid = source.getTileGrid();
     const tileResolution = this.snapTileResolution(
