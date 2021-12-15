@@ -1,6 +1,6 @@
 {
   "name": "@geoblocks/print",
-  "version": "0.6.1",
+  "version": "0.7.0",
   "module": "dist/print.es.js",
   "exports": {
     ".": [
@@ -45,7 +45,7 @@
     "lit": "^2.0.2",
     "node-fetch": "^3.1.0",
     "ol": "^6.9.0",
-    "ol-mapbox-style": "^6.7.0",
+    "ol-mapbox-style": "^6.8.0",
     "ts-jest": "^27.1.1",
     "typescript": "^4.5.4",
     "vite": "^2.7.2"
