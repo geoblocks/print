@@ -31,7 +31,8 @@ npm i @geoblocks/print
 import MVTEncoder from '@geoblocks/print';
 const r = await new MVTEncoder().encodeMVTLayer({
   layer, // a plain OpenLayers MVT layer
-  resolution, // the resolution to use for fetching features and styling
+  tileResolution, // the resolution to use for fetching features
+  styleResolution, // the resolution to use for styling features
   printExtent, // the extent to print
   canvasSize, // the target size in dots of the rendered layer (depends of the dpi)
 });
