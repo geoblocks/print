@@ -20,6 +20,7 @@ import stylefunction from 'ol-mapbox-style/dist/stylefunction.js';
 import {Extent} from 'ol/extent.js';
 import {LitElement, TemplateResult, css, html} from 'lit';
 import {PDF_POINTS_PER_METER} from '../constants';
+import {canvasSizeFromDimensionsInPdfPoints} from '../canvasUtils';
 import {centerPrintExtent, drawPrintExtent} from '../postcompose';
 import {customElement, query, state} from 'lit/decorators.js';
 import {extentFromProjection} from 'ol/tilegrid.js';
@@ -67,8 +68,9 @@ export class DemoApp extends LitElement {
   private map?: OLMap;
   private mvtLayer?: VectorTileLayer;
   private printExtentLayer?: VectorLayer<VectorSource<Geometry>>;
-  private targetSizeInPdfPoints = [510, 710]; // 72pts / inch => ~[18cm, 25cm]
+  private targetSizeInPdfPoints: [number, number] = [255, 355]; // 72pts / inch => ~[9cm, 12.5cm]
   private printScale = 1 / 5000;
+  private dpi = 96; // let's take a value adapted for a screen. For a printer 254 would be better.
 
   @state()
   private result0;
@@ -142,7 +144,7 @@ export class DemoApp extends LitElement {
       target: this.mapEl,
       layers: [],
       view: new View({
-        zoom: 14,
+        zoom: 15,
       }),
     });
     this.shouldDeclutter = defaults.declutter;
@@ -201,20 +203,22 @@ export class DemoApp extends LitElement {
         geometry: polygonFromExtent(printExtent),
       })
     );
-    const options: PrintEncodeOptions = {
-      // This should be computed using canvasSizeFromDimensionsInPdfPoints
-      // Then we could compare with the ratio of the printExtent
-      // ...
-      // we could also directly pass the expected canvas dimensions here
-      // as it is the only needed information
-      canvasResolution: 3, // FIXME: properly compute this number
-    };
-    const result = await encoder.encodeMVTLayer(
-      this.mvtLayer!,
-      viewResolution,
-      printExtent,
-      options
+    const canvasSize = canvasSizeFromDimensionsInPdfPoints(
+      this.targetSizeInPdfPoints,
+      this.dpi
     );
+    console.log(
+      'Estimated size on screen',
+      canvasSize.map((s) => (s / 96) * 2.54)
+    );
+    const options: PrintEncodeOptions = {
+      layer: this.mvtLayer!,
+      printExtent: printExtent,
+      tileResolution: viewResolution,
+      styleResolution: viewResolution,
+      canvasSize: canvasSize,
+    };
+    const result = await encoder.encodeMVTLayer(options);
     console.log(result);
     this.result0 = result[0];
   }

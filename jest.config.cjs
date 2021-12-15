@@ -192,6 +192,6 @@ module.exports = {
   // Whether to use watchman for file crawling
   // watchman: true,
   transformIgnorePatterns: [
-     "node_modules/(?!(ol|pbf|@open-wc|chai-a11y-axe|lit-html|lit-element|node-fetch|fetch-blob)/)", // <- exclude the OL lib
+     "node_modules/(?!(ol|pbf|@open-wc|chai-a11y-axe|lit-html|lit-element|node-fetch|fetch-blob|data-uri-to-buffer|formdata-polyfill)/)", // <- exclude the OL lib
   ]
 };
