@@ -1,3 +1,4 @@
+/* eslint-disable sort-imports-es6-autofix/sort-imports-es6 */
 import Feature from 'ol/Feature.js';
 import Geometry from 'ol/geom/Geometry';
 import Icon from 'ol/style/Icon.js';
@@ -16,7 +17,7 @@ import VectorSource from 'ol/source/Vector.js';
 import VectorTileLayer from 'ol/layer/VectorTile.js';
 import VectorTileSource from 'ol/source/VectorTile.js';
 import View from 'ol/View.js';
-import stylefunction from 'ol-mapbox-style/dist/stylefunction.js';
+import {stylefunction} from 'ol-mapbox-style';
 import {Extent} from 'ol/extent.js';
 import {LitElement, TemplateResult, css, html} from 'lit';
 import {PDF_POINTS_PER_METER} from '../constants';
@@ -197,8 +198,8 @@ export class DemoApp extends LitElement {
       ...this.map!.getCoordinateFromPixel([pp[0], pp[3]]),
       ...this.map!.getCoordinateFromPixel([pp[2], pp[1]]), // top right
     ] as Extent;
-    this.printExtentLayer?.getSource().clear();
-    this.printExtentLayer?.getSource().addFeature(
+    this.printExtentLayer?.getSource()?.clear();
+    this.printExtentLayer?.getSource()?.addFeature(
       new Feature({
         geometry: polygonFromExtent(printExtent),
       })
@@ -266,7 +267,7 @@ export class DemoApp extends LitElement {
       new TileLayer({
         zIndex: 10000,
         source: new TileDebug({
-          tileGrid: this.mvtLayer.getSource().getTileGrid(),
+          tileGrid: this.mvtLayer.getSource()!.getTileGrid()!,
         }),
       }),
     ];
@@ -323,7 +324,7 @@ export class DemoApp extends LitElement {
       new TileLayer({
         zIndex: 10000,
         source: new TileDebug({
-          tileGrid: this.mvtLayer.getSource().getTileGrid(),
+          tileGrid: this.mvtLayer.getSource()!.getTileGrid()!,
         }),
       }),
     ];

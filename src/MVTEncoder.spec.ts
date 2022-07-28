@@ -1,4 +1,4 @@
-/* global jest, test, expect */
+/* global test, expect */
 
 import MVTEncoder, {PoolDownloader} from './MVTEncoder';
 import VectorTileLayer from 'ol/layer/VectorTile.js';

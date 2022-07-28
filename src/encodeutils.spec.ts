@@ -54,7 +54,7 @@ test('listTiles', () => {
   const printResolution = 42;
   const tileGrid = new VectorTileSource({
     maxZoom: 15,
-  }).getTileGrid();
+  }).getTileGrid()!;
   const tiles = listTilesCoveringExtentAtResolution(
     printExtent,
     printResolution,

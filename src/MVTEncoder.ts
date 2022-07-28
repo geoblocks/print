@@ -362,7 +362,7 @@ export default class MVTEncoder {
 
   async fetchFeatures(mvtTiles: CoordExtent[], source: VectorTileSource) {
     const urlFunction = source.getTileUrlFunction();
-    const projection = source.getProjection();
+    const projection = source.getProjection()!;
 
     const featuresPromises = mvtTiles.map((t) => {
       // pixelratio and projection are not used
@@ -396,8 +396,8 @@ export default class MVTEncoder {
     const layer = options.layer;
     const outputFormat = options.outputFormat || 'png';
     const renderBuffer = layer.getRenderBuffer() || 100;
-    const source = layer.getSource();
-    const tileGrid = source.getTileGrid();
+    const source = layer.getSource()!;
+    const tileGrid = source.getTileGrid()!;
     const tileResolution = this.snapTileResolution(
       tileGrid,
       options.tileResolution
