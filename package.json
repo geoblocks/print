@@ -1,10 +1,10 @@
 {
   "name": "@geoblocks/print",
   "version": "0.7.2",
-  "module": "dist/print.es.js",
+  "module": "dist/print.js",
   "exports": {
     ".": [
-      "./dist/print.es.js",
+      "./dist/print.js",
       "./src/main.ts"
     ],
     "./src/*": "./src/*"
@@ -12,7 +12,7 @@
   "type": "module",
   "types": "types/main.d.ts",
   "files": [
-    "dist/print.es.js",
+    "dist/print.js",
     "types/*.d.ts"
   ],
   "license": "BSD-2-Clause",
