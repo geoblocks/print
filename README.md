@@ -40,7 +40,7 @@ const r = await new MVTEncoder().encodeMVTLayer({
 
 The result is tiled so that each image is reasonably big. Each tile result contains:
 - a base64 encoded image: `r[i].baseURL`;
-- the OL extent for htis image: `r[i].extent`.
+- the OL extent for this image: `r[i].extent`.
 
 
 ## Contributing
