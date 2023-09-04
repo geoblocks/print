@@ -20,6 +20,7 @@ function parsePNGFromFile(filepath: string): Promise<png.PNG> {
   return new Promise((resolve, reject) => {
     const stream = fs.createReadStream(filepath);
     stream.on('error', (err) => {
+      // @ts-ignore 2339
       if (err.code === 'ENOENT') {
         return reject(new Error(`File not found: ${filepath}`));
       }
