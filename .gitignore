@@ -6,3 +6,4 @@ types
 /coverage
 /geoblocks-print-*.tgz
 /ghpages
+/test_results/
