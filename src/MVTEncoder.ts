@@ -400,7 +400,7 @@ export default class MVTEncoder {
     const tileGrid = source.getTileGrid()!;
     const tileResolution = this.snapTileResolution(
       tileGrid,
-      options.tileResolution,
+      options.tileResolution
     );
     if (tileResolution !== options.tileResolution) {
       console.warn(

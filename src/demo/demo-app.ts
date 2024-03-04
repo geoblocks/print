@@ -7,7 +7,7 @@ import MVTEncoder, {PrintEncodeOptions} from '../MVTEncoder';
 import OLMap from 'ol/Map.js';
 import OSM from 'ol/source/OSM.js';
 import Stroke from 'ol/style/Stroke.js';
-import Style, {StyleFunction} from 'ol/style/Style.js';
+import Style from 'ol/style/Style.js';
 import Text from 'ol/style/Text.js';
 import TileDebug from 'ol/source/TileDebug.js';
 import TileLayer from 'ol/layer/Tile.js';
@@ -16,7 +16,7 @@ import VectorSource from 'ol/source/Vector.js';
 import VectorTileLayer from 'ol/layer/VectorTile.js';
 import VectorTileSource from 'ol/source/VectorTile.js';
 import View from 'ol/View.js';
-import {stylefunction} from 'ol-mapbox-style';
+import {applyStyle} from 'ol-mapbox-style';
 import {Extent} from 'ol/extent.js';
 import {LitElement, TemplateResult, css, html} from 'lit';
 import {PDF_POINTS_PER_METER} from '../constants';
@@ -89,48 +89,11 @@ export class DemoApp extends LitElement {
   async configureVTStyle(
     layer: VectorTileLayer,
     url: string,
-    sourceId: string,
-  ): Promise<StyleFunction> {
+    sourceId: string
+  ): Promise<void> {
     return fetch(url)
       .then((r) => r.json())
-      .then((style) => {
-        let spriteUrl, spriteDataUrl, spriteImageUrl, addMpFonts;
-
-        if (style.sprite) {
-          spriteUrl = style.sprite;
-
-          // support relative spriteUrls
-          if (spriteUrl.includes('./')) {
-            spriteUrl = new URL(spriteUrl, url);
-          }
-
-          spriteDataUrl = spriteUrl.toString().concat('.json');
-          spriteImageUrl = spriteUrl.toString().concat('.png');
-
-          return fetch(spriteDataUrl)
-            .then((r) => r.json())
-            .then((spriteData) => {
-              return stylefunction(
-                layer,
-                style,
-                sourceId,
-                undefined,
-                spriteData,
-                spriteImageUrl,
-                addMpFonts,
-              );
-            });
-        }
-        return stylefunction(
-          layer,
-          style,
-          sourceId,
-          undefined,
-          undefined,
-          undefined,
-          addMpFonts,
-        );
-      });
+      .then((style) => applyStyle(layer, style, sourceId));
   }
 
   createMap(): void {
@@ -155,7 +118,7 @@ export class DemoApp extends LitElement {
       const res = evt.frameState!.viewState.resolution;
       drawPrintExtent(
         evt,
-        this.getPrintExtentSizeForResolution(res, devicePixelRatio),
+        this.getPrintExtentSizeForResolution(res, devicePixelRatio)
       );
     });
     this.map.getView().on('change:resolution', () => {
@@ -171,7 +134,7 @@ export class DemoApp extends LitElement {
    */
   getPrintExtentSizeForResolution(
     resolution: number,
-    pixelRatio: number,
+    pixelRatio: number
   ): number[] {
     return this.targetSizeInPdfPoints.map((side) => {
       const metersOnTheMap = side / PDF_POINTS_PER_METER / this.printScale;
@@ -191,7 +154,7 @@ export class DemoApp extends LitElement {
 
     const peSize = this.getPrintExtentSizeForResolution(
       viewResolution,
-      window.devicePixelRatio,
+      window.devicePixelRatio
     );
     const pp = centerPrintExtent(peSize, size[0], size[1]);
     const printExtent: Extent = [
@@ -202,15 +165,15 @@ export class DemoApp extends LitElement {
     this.printExtentLayer?.getSource()?.addFeature(
       new Feature({
         geometry: polygonFromExtent(printExtent),
-      }),
+      })
     );
     const canvasSize = canvasSizeFromDimensionsInPdfPoints(
       this.targetSizeInPdfPoints,
-      this.dpi,
+      this.dpi
     );
     console.log(
       'Estimated size on screen',
-      canvasSize.map((s) => (s / 96) * 2.54),
+      canvasSize.map((s) => (s / 96) * 2.54)
     );
     const options: PrintEncodeOptions = {
       layer: this.mvtLayer!,
@@ -276,26 +239,15 @@ export class DemoApp extends LitElement {
   }
 
   configureMapboxDemo1(): void {
-    const layer = 'ch.swisstopo.leichte-basiskarte.vt';
     this.configureMapboxDemo(
-      `https://vectortiles.geo.admin.ch/tiles/${layer}/v3.0.1/{z}/{x}/{y}.pbf`,
-      `https://vectortiles.geo.admin.ch/styles/${layer}/style.json`,
-      'leichtebasiskarte_v3.0.1',
+      'https://vectortiles.geo.admin.ch/styles/ch.swisstopo.leichte-basiskarte.vt/style.json',
+      'leichtebasiskarte_v3.0.1'
     );
   }
 
-  async configureMapboxDemo(
-    pbfURL: string,
-    styleURL: string,
-    sourceId: string,
-  ): Promise<void> {
+  async configureMapboxDemo(styleURL: string, sourceId: string): Promise<void> {
     this.mvtLayer = new VectorTileLayer({
       declutter: this.shouldDeclutter,
-      source: new VectorTileSource({
-        url: pbfURL,
-        format: new MVT(),
-        maxZoom: 14,
-      }),
     });
     await this.configureVTStyle(this.mvtLayer, styleURL, sourceId);
 
