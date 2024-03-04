@@ -278,9 +278,9 @@ export class DemoApp extends LitElement {
   configureMapboxDemo1(): void {
     const layer = 'ch.swisstopo.leichte-basiskarte.vt';
     this.configureMapboxDemo(
-      `https://vectortiles.geo.admin.ch/tiles/${layer}/v3.0.0/{z}/{x}/{y}.pbf`,
+      `https://vectortiles.geo.admin.ch/tiles/${layer}/v3.0.1/{z}/{x}/{y}.pbf`,
       `https://vectortiles.geo.admin.ch/styles/${layer}/style.json`,
-      'leichtebasiskarte_v3.0.0',
+      'leichtebasiskarte_v3.0.1',
     );
   }
 
