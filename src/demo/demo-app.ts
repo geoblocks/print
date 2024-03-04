@@ -89,7 +89,7 @@ export class DemoApp extends LitElement {
   async configureVTStyle(
     layer: VectorTileLayer,
     url: string,
-    sourceId: string
+    sourceId: string,
   ): Promise<StyleFunction> {
     return fetch(url)
       .then((r) => r.json())
@@ -117,7 +117,7 @@ export class DemoApp extends LitElement {
                 undefined,
                 spriteData,
                 spriteImageUrl,
-                addMpFonts
+                addMpFonts,
               );
             });
         }
@@ -128,7 +128,7 @@ export class DemoApp extends LitElement {
           undefined,
           undefined,
           undefined,
-          addMpFonts
+          addMpFonts,
         );
       });
   }
@@ -155,7 +155,7 @@ export class DemoApp extends LitElement {
       const res = evt.frameState!.viewState.resolution;
       drawPrintExtent(
         evt,
-        this.getPrintExtentSizeForResolution(res, devicePixelRatio)
+        this.getPrintExtentSizeForResolution(res, devicePixelRatio),
       );
     });
     this.map.getView().on('change:resolution', () => {
@@ -171,7 +171,7 @@ export class DemoApp extends LitElement {
    */
   getPrintExtentSizeForResolution(
     resolution: number,
-    pixelRatio: number
+    pixelRatio: number,
   ): number[] {
     return this.targetSizeInPdfPoints.map((side) => {
       const metersOnTheMap = side / PDF_POINTS_PER_METER / this.printScale;
@@ -191,7 +191,7 @@ export class DemoApp extends LitElement {
 
     const peSize = this.getPrintExtentSizeForResolution(
       viewResolution,
-      window.devicePixelRatio
+      window.devicePixelRatio,
     );
     const pp = centerPrintExtent(peSize, size[0], size[1]);
     const printExtent: Extent = [
@@ -202,15 +202,15 @@ export class DemoApp extends LitElement {
     this.printExtentLayer?.getSource()?.addFeature(
       new Feature({
         geometry: polygonFromExtent(printExtent),
-      })
+      }),
     );
     const canvasSize = canvasSizeFromDimensionsInPdfPoints(
       this.targetSizeInPdfPoints,
-      this.dpi
+      this.dpi,
     );
     console.log(
       'Estimated size on screen',
-      canvasSize.map((s) => (s / 96) * 2.54)
+      canvasSize.map((s) => (s / 96) * 2.54),
     );
     const options: PrintEncodeOptions = {
       layer: this.mvtLayer!,
@@ -272,28 +272,22 @@ export class DemoApp extends LitElement {
       }),
     ];
     layers!.extend(newLayers);
-    this.map?.getView().setCenter(fromLonLat([7.44835, 46.94811]));
+    this.map?.getView().setCenter(fromLonLat([6.5725, 46.51339]));
   }
 
   configureMapboxDemo1(): void {
+    const layer = 'ch.swisstopo.leichte-basiskarte.vt';
     this.configureMapboxDemo(
-      'https://vectortiles.geo.admin.ch/tiles/ch.swisstopo.leichte-basiskarte.vt/v3.0.0/{z}/{x}/{y}.pbf',
-      'https://vectortiles.geo.admin.ch/styles/ch.swisstopo.leichte-basiskarte.vt/style.json',
-      'leichtebasiskarte_v3.0.0'
+      `https://vectortiles.geo.admin.ch/tiles/${layer}/v3.0.0/{z}/{x}/{y}.pbf`,
+      `https://vectortiles.geo.admin.ch/styles/${layer}/style.json`,
+      'leichtebasiskarte_v3.0.0',
     );
   }
-
-  // configureMapboxDemo2(): void {
-  //   this.configureMapboxDemo(
-  //     'https://adv-smart.de/tiles/smarttiles_de_public_v1/{z}/{x}/{y}.pbf',
-  //     'https://adv-smart.de/styles/public/de_style_hillshade.json'
-  //   );
-  // }
 
   async configureMapboxDemo(
     pbfURL: string,
     styleURL: string,
-    sourceId: string
+    sourceId: string,
   ): Promise<void> {
     this.mvtLayer = new VectorTileLayer({
       declutter: this.shouldDeclutter,
@@ -330,9 +324,6 @@ export class DemoApp extends LitElement {
       case 'mapbox1':
         this.configureMapboxDemo1();
         break;
-      // case 'mapbox2':
-      //   this.configureMapboxDemo2();
-      //   break;
       default:
     }
   }
@@ -370,7 +361,6 @@ export class DemoApp extends LitElement {
       >
         <option value="simple">Basic style function</option>
         <option value="mapbox1">OL-Mapbox-style1</option>
-        <option value="mapbox2">OL-Mapbox-style2</option>
       </select>
       <label>
         <input
