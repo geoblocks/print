@@ -7,7 +7,7 @@ import MVTEncoder, {PrintEncodeOptions} from '../MVTEncoder';
 import OLMap from 'ol/Map.js';
 import OSM from 'ol/source/OSM.js';
 import Stroke from 'ol/style/Stroke.js';
-import Style, {StyleFunction} from 'ol/style/Style.js';
+import Style from 'ol/style/Style.js';
 import Text from 'ol/style/Text.js';
 import TileDebug from 'ol/source/TileDebug.js';
 import TileLayer from 'ol/layer/Tile.js';
@@ -16,7 +16,7 @@ import VectorSource from 'ol/source/Vector.js';
 import VectorTileLayer from 'ol/layer/VectorTile.js';
 import VectorTileSource from 'ol/source/VectorTile.js';
 import View from 'ol/View.js';
-import {stylefunction} from 'ol-mapbox-style';
+import {applyStyle} from 'ol-mapbox-style';
 import {Extent} from 'ol/extent.js';
 import {LitElement, TemplateResult, css, html} from 'lit';
 import {PDF_POINTS_PER_METER} from '../constants';
@@ -90,47 +90,10 @@ export class DemoApp extends LitElement {
     layer: VectorTileLayer,
     url: string,
     sourceId: string
-  ): Promise<StyleFunction> {
+  ): Promise<void> {
     return fetch(url)
       .then((r) => r.json())
-      .then((style) => {
-        let spriteUrl, spriteDataUrl, spriteImageUrl, addMpFonts;
-
-        if (style.sprite) {
-          spriteUrl = style.sprite;
-
-          // support relative spriteUrls
-          if (spriteUrl.includes('./')) {
-            spriteUrl = new URL(spriteUrl, url);
-          }
-
-          spriteDataUrl = spriteUrl.toString().concat('.json');
-          spriteImageUrl = spriteUrl.toString().concat('.png');
-
-          return fetch(spriteDataUrl)
-            .then((r) => r.json())
-            .then((spriteData) => {
-              return stylefunction(
-                layer,
-                style,
-                sourceId,
-                undefined,
-                spriteData,
-                spriteImageUrl,
-                addMpFonts
-              );
-            });
-        }
-        return stylefunction(
-          layer,
-          style,
-          sourceId,
-          undefined,
-          undefined,
-          undefined,
-          addMpFonts
-        );
-      });
+      .then((style) => applyStyle(layer, style, sourceId));
   }
 
   createMap(): void {
@@ -272,36 +235,19 @@ export class DemoApp extends LitElement {
       }),
     ];
     layers!.extend(newLayers);
-    this.map?.getView().setCenter(fromLonLat([7.44835, 46.94811]));
+    this.map?.getView().setCenter(fromLonLat([6.5725, 46.51339]));
   }
 
   configureMapboxDemo1(): void {
     this.configureMapboxDemo(
-      'https://vectortiles.geo.admin.ch/tiles/ch.swisstopo.leichte-basiskarte.vt/v3.0.0/{z}/{x}/{y}.pbf',
       'https://vectortiles.geo.admin.ch/styles/ch.swisstopo.leichte-basiskarte.vt/style.json',
-      'leichtebasiskarte_v3.0.0'
+      'leichtebasiskarte_v3.0.1'
     );
   }
 
-  // configureMapboxDemo2(): void {
-  //   this.configureMapboxDemo(
-  //     'https://adv-smart.de/tiles/smarttiles_de_public_v1/{z}/{x}/{y}.pbf',
-  //     'https://adv-smart.de/styles/public/de_style_hillshade.json'
-  //   );
-  // }
-
-  async configureMapboxDemo(
-    pbfURL: string,
-    styleURL: string,
-    sourceId: string
-  ): Promise<void> {
+  async configureMapboxDemo(styleURL: string, sourceId: string): Promise<void> {
     this.mvtLayer = new VectorTileLayer({
       declutter: this.shouldDeclutter,
-      source: new VectorTileSource({
-        url: pbfURL,
-        format: new MVT(),
-        maxZoom: 14,
-      }),
     });
     await this.configureVTStyle(this.mvtLayer, styleURL, sourceId);
 
@@ -330,9 +276,6 @@ export class DemoApp extends LitElement {
       case 'mapbox1':
         this.configureMapboxDemo1();
         break;
-      // case 'mapbox2':
-      //   this.configureMapboxDemo2();
-      //   break;
       default:
     }
   }
@@ -370,7 +313,6 @@ export class DemoApp extends LitElement {
       >
         <option value="simple">Basic style function</option>
         <option value="mapbox1">OL-Mapbox-style1</option>
-        <option value="mapbox2">OL-Mapbox-style2</option>
       </select>
       <label>
         <input
