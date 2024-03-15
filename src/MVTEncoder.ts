@@ -24,7 +24,12 @@ import {transform2D} from 'ol/geom/flat/transform.js';
 
 import CanvasBuilderGroup from 'ol/render/canvas/BuilderGroup.js';
 import CanvasExecutorGroup from 'ol/render/canvas/ExecutorGroup.js';
-import TileGrid from 'ol/tilegrid/TileGrid';
+import RBush from 'rbush';
+import TileGrid from 'ol/tilegrid/TileGrid.js';
+import {VERSION} from 'ol';
+import type {Size} from 'ol/size.js';
+
+const olMajorVersion = Number.parseInt(VERSION.split('.')[0]);
 
 /**
  * Simple proxy to the fetch function for now.
@@ -168,7 +173,7 @@ export default class MVTEncoder {
               tolerance,
               resourceLoadedListener,
               undefined,
-              declutter
+              declutterBuilderGroup
             ) || loading;
         }
       }
@@ -197,10 +202,14 @@ export default class MVTEncoder {
     const transform = coordinateToPixelTransform;
     const viewRotation = 0;
     const snapToPixel = true;
+    const scaledSize =
+      olMajorVersion < 9
+        ? (1 as unknown as Size)
+        : [context.canvas.width, context.canvas.height];
 
     renderingExecutorGroup.execute(
       context,
-      [context.canvas.width, context.canvas.height],
+      scaledSize,
       transform,
       viewRotation,
       snapToPixel,
@@ -218,7 +227,7 @@ export default class MVTEncoder {
       );
       declutterExecutorGroup.execute(
         context,
-        [context.canvas.width, context.canvas.height],
+        scaledSize,
         transform,
         viewRotation,
         snapToPixel,
@@ -431,7 +440,13 @@ export default class MVTEncoder {
     const styleResolution = options.styleResolution || tileResolution;
     const layerStyleFunction = layer.getStyleFunction()!; // there is always a default one
     const layerOpacity = layer.get('opacity');
-    const declutter = !!layer.getDeclutter();
+    // declutter is a boolean in OpenLayers 9 but anq RBush in earlier versions
+    const declutter: boolean =
+      olMajorVersion < 9
+        ? ((layer.getDeclutter()
+            ? new RBush<any>(7)
+            : undefined) as unknown as boolean)
+        : !!layer.getDeclutter();
 
     // render to these tiles;
     const encodedLayers = renderTiles.map((rt) =>
