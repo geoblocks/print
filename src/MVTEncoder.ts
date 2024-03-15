@@ -25,7 +25,11 @@ import {transform2D} from 'ol/geom/flat/transform.js';
 import CanvasBuilderGroup from 'ol/render/canvas/BuilderGroup.js';
 import CanvasExecutorGroup from 'ol/render/canvas/ExecutorGroup.js';
 import RBush from 'rbush';
-import TileGrid from 'ol/tilegrid/TileGrid';
+import TileGrid from 'ol/tilegrid/TileGrid.js';
+import {VERSION} from 'ol';
+import type {Size} from 'ol/size.js';
+
+const olMajorVersion = Number.parseInt(VERSION.split('.')[0]);
 
 /**
  * Simple proxy to the fetch function for now.
@@ -109,7 +113,7 @@ export default class MVTEncoder {
    * @param coordinateToPixelTransform World to CSS coordinates transform (top-left is 0)
    * @param context
    * @param renderBuffer
-   * @param declutterTree
+   * @param declutter
    */
   private drawFeaturesToContextUsingRenderAPI_(
     featuresExtent: _FeatureExtent,
@@ -118,7 +122,7 @@ export default class MVTEncoder {
     coordinateToPixelTransform: Transform,
     context: CanvasRenderingContext2D,
     renderBuffer: number,
-    declutterTree?: RBush<any>
+    declutter: boolean
   ) {
     const pixelRatio = 1;
     const builderGroup = new CanvasBuilderGroup(
@@ -129,7 +133,7 @@ export default class MVTEncoder {
     );
 
     let declutterBuilderGroup: CanvasBuilderGroup | undefined;
-    if (declutterTree) {
+    if (declutter && olMajorVersion <= 9) {
       declutterBuilderGroup = new CanvasBuilderGroup(
         0,
         featuresExtent.extent,
@@ -169,7 +173,9 @@ export default class MVTEncoder {
               tolerance,
               resourceLoadedListener,
               undefined,
-              declutterBuilderGroup
+              olMajorVersion <= 9
+                ? (declutterBuilderGroup as unknown as boolean)
+                : declutter
             ) || loading;
         }
       }
@@ -195,14 +201,17 @@ export default class MVTEncoder {
       executorGroupInstructions,
       renderBuffer
     );
-    const scale = 1;
     const transform = coordinateToPixelTransform;
     const viewRotation = 0;
     const snapToPixel = true;
+    const scaledSize =
+      olMajorVersion < 9
+        ? (1 as unknown as Size)
+        : [context.canvas.width, context.canvas.height];
 
     renderingExecutorGroup.execute(
       context,
-      scale,
+      scaledSize,
       transform,
       viewRotation,
       snapToPixel,
@@ -220,12 +229,12 @@ export default class MVTEncoder {
       );
       declutterExecutorGroup.execute(
         context,
-        scale,
+        scaledSize,
         transform,
         viewRotation,
         snapToPixel,
         undefined,
-        declutterTree
+        declutter
       );
     }
   }
@@ -433,8 +442,13 @@ export default class MVTEncoder {
     const styleResolution = options.styleResolution || tileResolution;
     const layerStyleFunction = layer.getStyleFunction()!; // there is always a default one
     const layerOpacity = layer.get('opacity');
-
-    const decluterTree = layer.getDeclutter() ? new RBush<any>(9) : undefined;
+    // declutter is a boolean in OpenLayers 9 but anq RBush in earlier versions
+    const declutter: boolean =
+      olMajorVersion < 9
+        ? ((layer.getDeclutter()
+            ? new RBush<any>(7)
+            : undefined) as unknown as boolean)
+        : !!layer.getDeclutter();
 
     // render to these tiles;
     const encodedLayers = renderTiles.map((rt) =>
@@ -446,7 +460,7 @@ export default class MVTEncoder {
         layerStyleFunction,
         layerOpacity,
         renderBuffer,
-        decluterTree,
+        declutter,
         outputFormat
       )
     );
@@ -461,7 +475,7 @@ export default class MVTEncoder {
     layerStyleFunction: StyleFunction,
     layerOpacity: number,
     renderBuffer: number,
-    decluterTree?: RBush<any>,
+    declutter: boolean,
     outputFormat?: string
   ): PrintResult {
     const canvas = document.createElement('canvas');
@@ -497,7 +511,7 @@ export default class MVTEncoder {
           transform,
           ctx!,
           renderBuffer,
-          decluterTree
+          declutter
         );
       }
     });

@@ -66,7 +66,7 @@ export class DemoApp extends LitElement {
 
   private map?: OLMap;
   private mvtLayer?: VectorTileLayer;
-  private printExtentLayer?: VectorLayer<VectorSource<Geometry>>;
+  private printExtentLayer?: VectorLayer<VectorSource<Feature<Geometry>>>;
   private targetSizeInPdfPoints: [number, number] = [255, 355]; // 72pts / inch => ~[9cm, 12.5cm]
   private printScale = 1 / 5000;
   private dpi = 96; // let's take a value adapted for a screen. For a printer 254 would be better.
