@@ -133,7 +133,7 @@ export default class MVTEncoder {
     );
 
     let declutterBuilderGroup: CanvasBuilderGroup | undefined;
-    if (declutter) {
+    if (declutter && olMajorVersion <= 9) {
       declutterBuilderGroup = new CanvasBuilderGroup(
         0,
         featuresExtent.extent,
@@ -173,7 +173,9 @@ export default class MVTEncoder {
               tolerance,
               resourceLoadedListener,
               undefined,
-              declutterBuilderGroup
+              olMajorVersion <= 9
+                ? (declutterBuilderGroup as unknown as boolean)
+                : declutter
             ) || loading;
         }
       }
