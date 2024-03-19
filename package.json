@@ -1,20 +1,13 @@
 {
   "name": "@geoblocks/print",
   "version": "0.7.6",
-  "module": "dist/print.js",
-  "exports": {
-    ".": [
-      "./dist/print.js",
-      "./src/main.ts"
-    ],
-    "./src/*": "./src/*"
-  },
+  "module": "lib/print.js",
+  "main": "lib/print.js",
   "type": "module",
-  "types": "types/main.d.ts",
+  "types": "lib/types/main.d.ts",
   "files": [
-    "dist/print.js",
-    "dist/print.js.map",
-    "types/*.d.ts"
+    "lib/*",
+    "src/*"
   ],
   "license": "BSD-2-Clause",
   "scripts": {
@@ -24,6 +17,7 @@
     "build": "tsc && vite build",
     "build-ghpages": "tsc && vite -c vite.config.ghpages.ts build",
     "preview": "vite -c vite.config.ghpages.ts preview",
+    "prepare": "tsc --pretty",
     "test": "jest"
   },
   "peerDependencies": {
