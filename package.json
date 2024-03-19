@@ -13,6 +13,7 @@
   "types": "types/main.d.ts",
   "files": [
     "dist/print.js",
+    "dist/print.js.map",
     "types/*.d.ts"
   ],
   "license": "BSD-2-Clause",
