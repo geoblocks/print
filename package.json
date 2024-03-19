@@ -1,8 +1,8 @@
 {
   "name": "@geoblocks/print",
-  "version": "0.7.6",
-  "module": "lib/print.js",
-  "main": "lib/print.js",
+  "version": "0.7.7",
+  "module": "lib/main.js",
+  "main": "lib/main.js",
   "type": "module",
   "types": "lib/types/main.d.ts",
   "files": [
