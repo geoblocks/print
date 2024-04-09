@@ -10,6 +10,7 @@
     "src/*"
   ],
   "license": "BSD-2-Clause",
+  "repository": "github:geoblocks/print",
   "scripts": {
     "lint": "eslint src --ext .ts,.js",
     "start": "vite",
