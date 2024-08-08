@@ -23,7 +23,7 @@ module.exports = {
   // collectCoverageFrom: undefined,
 
   // The directory where Jest should output its coverage files
-  coverageDirectory: "coverage",
+  coverageDirectory: 'coverage',
 
   // An array of regexp pattern strings used to skip coverage collection
   // coveragePathIgnorePatterns: [
@@ -137,7 +137,7 @@ module.exports = {
   // snapshotSerializers: [],
 
   // The test environment that will be used for testing
-  testEnvironment: "jsdom",
+  testEnvironment: 'jsdom',
 
   // Options that will be passed to the testEnvironment
   // testEnvironmentOptions: {},
@@ -192,6 +192,6 @@ module.exports = {
   // Whether to use watchman for file crawling
   // watchman: true,
   transformIgnorePatterns: [
-     "node_modules/(?!(ol|pbf|@open-wc|chai-a11y-axe|lit-html|lit-element|node-fetch|fetch-blob|data-uri-to-buffer|formdata-polyfill|color-space|color-rgba|color-parse)/)", // <- exclude the OL lib
-  ]
+    'node_modules/(?!(ol|pbf|@open-wc|chai-a11y-axe|lit-html|lit-element|node-fetch|fetch-blob|data-uri-to-buffer|formdata-polyfill|color-space|color-rgba|color-parse|rbush)/)', // <- exclude the OL lib
+  ],
 };
