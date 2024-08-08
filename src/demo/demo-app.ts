@@ -100,7 +100,7 @@ export class DemoApp extends LitElement {
     this.printExtentLayer = new VectorLayer({
       // @ts-ignore
       'name': 'printExtent',
-      source: new VectorSource({
+      source: new VectorSource<Feature<Geometry>>({
         features: [],
       }),
     });
