@@ -1,3 +1,7 @@
+# v0.7.9 - 2024/08/12
+
+- port to OpenLayers 10
+
 # v0.7.5 - 2024/03/15
 
 - port to OpenLayers 9
