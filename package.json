@@ -1,6 +1,6 @@
 {
   "name": "@geoblocks/print",
-  "version": "0.7.8",
+  "version": "0.7.9",
   "module": "lib/main.js",
   "main": "lib/main.js",
   "type": "module",
