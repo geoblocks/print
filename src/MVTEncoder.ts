@@ -332,7 +332,7 @@ export default class MVTEncoder {
 
   snapTileResolution(tileGrid: TileGrid, targetResolution: number): number {
     const resolutions = tileGrid.getResolutions();
-    let resolution = resolutions[resolutions.length - 2]; // the last one is exclusive?
+    let resolution = resolutions[resolutions.length - 1]; //the last one is inclusive
     for (let i = resolutions.length - 2; i >= 0; i--) {
       const r = resolutions[i];
       if (r <= targetResolution) {
